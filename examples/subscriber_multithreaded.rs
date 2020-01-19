@@ -18,7 +18,7 @@ struct CounterTopic {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    Runtime::get_intance("/subscriber_blocking");
+    Runtime::get_intance("/subscriber_multithreaded");
 
     let subscriber = Subscriber::<CounterTopic>::new("Radar", "FrontLeft", "Counter");
 

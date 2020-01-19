@@ -17,7 +17,7 @@ struct CounterTopic {
 }
 
 fn main() {
-    Runtime::get_intance("/subscriber_polling");
+    Runtime::get_intance("/subscriber_simple");
 
     let subscriber = Subscriber::<CounterTopic>::new("Radar", "FrontLeft", "Counter");
 

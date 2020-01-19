@@ -1,0 +1,3 @@
+[submodule "iceoryx"]
+	path = iceoryx
+	url = https://github.com/eclipse/iceoryx.git

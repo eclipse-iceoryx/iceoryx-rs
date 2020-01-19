@@ -1,0 +1,15 @@
+[package]
+name = "iceoryx-rs"
+version = "0.0.1"
+authors = ["Mathias Kraus"]
+edition = "2018"
+build = "build.rs"
+
+[lib]
+name = "iceoryx_rs"
+
+[build-dependencies]
+cpp_build = "0.5"
+
+[dependencies]
+cpp = "0.5"

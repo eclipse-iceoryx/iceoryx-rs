@@ -6,7 +6,7 @@ Experimental rust wrapper for the [iceoryx](https://github.com/eclipse/iceoryx) 
 
 Disclaimer: This is a personal side project and not related to my employer!
 
-# clone an build
+# clone and build
 
 The iceoryx repo is include as git submodule, therefore keep in mind to checkout with the `--recursive` option.
 ```

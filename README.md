@@ -1,8 +1,8 @@
 # iceoryx-rs
 
-Experimental [iceoryx](https://github.com/eclipse/iceoryx) rust bindings.
+Experimental rust wrapper for the [iceoryx](https://github.com/eclipse/iceoryx) IPC middleware.
 
-Disclaimer: This is a personal side project and related to my employer!
+Disclaimer: This is a personal side project and not related to my employer!
 
 # clone an build
 

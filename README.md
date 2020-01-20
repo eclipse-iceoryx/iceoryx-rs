@@ -1,5 +1,7 @@
 # iceoryx-rs
 
+![iceoryx-rs](https://user-images.githubusercontent.com/56729607/72765849-bf8a7980-3bee-11ea-9153-7e43215e9ca2.png)
+
 Experimental rust wrapper for the [iceoryx](https://github.com/eclipse/iceoryx) IPC middleware.
 
 Disclaimer: This is a personal side project and not related to my employer!

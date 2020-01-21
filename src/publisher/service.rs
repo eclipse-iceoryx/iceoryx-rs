@@ -36,10 +36,9 @@ impl<T: POD> Service<T> {
     }
 
     pub fn publish(&self, mut sample: SampleMut<T>) {
-        sample
-            .data
-            .take()
-            .map(|chunk| sample.service.publisher.ffi_pub.send_chunk(chunk));
+        if let Some(chunk) = sample.data.take() {
+            sample.service.publisher.ffi_pub.send_chunk(chunk)
+        }
     }
 
     pub(super) fn release_chunk(&self, chunk: Box<T>) {

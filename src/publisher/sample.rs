@@ -44,8 +44,8 @@ impl<'a, T: POD> DerefMut for SampleMut<'a, T> {
 
 impl<'a, T: POD> Drop for SampleMut<'a, T> {
     fn drop(&mut self) {
-        self.data
-            .take()
-            .map(|chunk| self.service.release_chunk(chunk));
+        if let Some(chunk) = self.data.take() {
+            self.service.release_chunk(chunk);
+        }
     }
 }

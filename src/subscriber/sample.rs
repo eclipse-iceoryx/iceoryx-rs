@@ -28,9 +28,9 @@ impl<'a, T> Deref for Sample<'a, T> {
 
 impl<'a, T> Drop for Sample<'a, T> {
     fn drop(&mut self) {
-        self.data
-            .take()
-            .map(|chunk| self.ffi_sub.release_chunk(chunk));
+        if let Some(chunk) = self.data.take() {
+            self.ffi_sub.release_chunk(chunk)
+        }
     }
 }
 
@@ -60,11 +60,9 @@ impl<T> SampleReceiverST<T> {
     }
 
     pub fn get_sample(&self) -> Option<Sample<T>> {
-        self.ffi_sub.get_chunk().map_or(None, |chunk| {
-            Some(Sample {
-                data: Some(chunk),
-                ffi_sub: &self.ffi_sub,
-            })
+        self.ffi_sub.get_chunk().map(|chunk| Sample {
+            data: Some(chunk),
+            ffi_sub: &self.ffi_sub,
         })
     }
 }
@@ -118,9 +116,9 @@ impl<T> SampleReceiverMT<T> {
         }
 
         if self.ffi_sub.wait_for_chunks_enabled() {
-            return SampleReceiverWaitState::Timeout;
+            SampleReceiverWaitState::Timeout
         } else {
-            return SampleReceiverWaitState::Stopped;
+            SampleReceiverWaitState::Stopped
         }
     }
 
@@ -133,11 +131,9 @@ impl<T> SampleReceiverMT<T> {
     }
 
     pub fn get_sample(&self) -> Option<Sample<T>> {
-        self.ffi_sub.get_chunk().map_or(None, |chunk| {
-            Some(Sample {
-                data: Some(chunk),
-                ffi_sub: &self.ffi_sub,
-            })
+        self.ffi_sub.get_chunk().map(|chunk| Sample {
+            data: Some(chunk),
+            ffi_sub: &self.ffi_sub,
         })
     }
 }

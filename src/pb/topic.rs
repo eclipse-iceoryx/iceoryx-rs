@@ -4,26 +4,20 @@
 // http://www.apache.org/licenses/LICENSE-2.0>. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-mod ffi;
-mod sample;
-mod service;
-
+use super::{ffi::Publisher as FfiPublisher, Publisher, POD};
 use crate::IceOryxError;
-
-pub use sample::POD;
-pub use service::Service;
 
 use std::marker::PhantomData;
 
-pub struct Publisher<T: POD> {
-    ffi_pub: Box<ffi::Publisher>,
+pub struct Topic<T: POD> {
+    pub(super) ffi_pub: Box<FfiPublisher>,
     phantom: PhantomData<T>,
 }
 
-impl<T: POD> Publisher<T> {
+impl<T: POD> Topic<T> {
     pub fn new(service: &str, instance: &str, event: &str) -> Self {
-        Self {
-            ffi_pub: ffi::Publisher::new(service, instance, event),
+        Topic {
+            ffi_pub: FfiPublisher::new(service, instance, event),
             phantom: PhantomData,
         }
     }
@@ -36,7 +30,7 @@ impl<T: POD> Publisher<T> {
         event: &str,
         data: T,
     ) -> Result<Self, IceOryxError> {
-        let ffi_pub = ffi::Publisher::new(service, instance, event);
+        let ffi_pub = FfiPublisher::new(service, instance, event);
 
         ffi_pub.enable_delivery_on_subscription();
 
@@ -44,21 +38,21 @@ impl<T: POD> Publisher<T> {
         *chunk = data;
         ffi_pub.send_chunk::<T>(chunk);
 
-        Ok(Self {
+        Ok(Topic {
             ffi_pub,
             phantom: PhantomData,
         })
     }
 
-    pub fn offer(self) -> Service<T> {
+    pub fn offer(self) -> Publisher<T> {
         // TODO since the RouDi discovery loop introduces a latency until the service is offered,
         // a OfferState, similar to the SubscriptionState might be a worthwhile idea
         self.ffi_pub.offer();
-        Service::new(self)
+        Publisher::new(self)
     }
 }
 
-impl<T: POD> Drop for Publisher<T> {
+impl<T: POD> Drop for Topic<T> {
     fn drop(&mut self) {
         self.ffi_pub.stop_offer();
     }

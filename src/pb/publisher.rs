@@ -4,22 +4,19 @@
 // http://www.apache.org/licenses/LICENSE-2.0>. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use super::{
-    sample::{SampleMut, POD},
-    Publisher,
-};
+use super::{sample::SampleMut, Topic, POD};
 use crate::IceOryxError;
 
-pub struct Service<T: POD> {
-    publisher: Publisher<T>,
+pub struct Publisher<T: POD> {
+    publisher: Topic<T>,
 }
 
-impl<T: POD> Service<T> {
-    pub(super) fn new(publisher: Publisher<T>) -> Self {
-        Self { publisher }
+impl<T: POD> Publisher<T> {
+    pub(super) fn new(publisher: Topic<T>) -> Self {
+        Publisher { publisher }
     }
 
-    pub fn stop(self) -> Publisher<T> {
+    pub fn stop(self) -> Topic<T> {
         self.publisher.ffi_pub.stop_offer();
         self.publisher
     }

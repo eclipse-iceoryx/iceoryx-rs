@@ -4,7 +4,8 @@
 // http://www.apache.org/licenses/LICENSE-2.0>. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use iceoryx_rs::{Runtime, SampleReceiverWaitState, Subscriber, SubscriptionState};
+use iceoryx_rs::sb::{SampleReceiverWaitState, SubscriptionState, Topic};
+use iceoryx_rs::Runtime;
 
 use std::error::Error;
 use std::thread;
@@ -18,13 +19,13 @@ struct CounterTopic {
 fn main() -> Result<(), Box<dyn Error>> {
     Runtime::get_intance("/subscriber_multithreaded");
 
-    let subscriber = Subscriber::<CounterTopic>::new("Radar", "FrontLeft", "Counter");
+    let topic = Topic::<CounterTopic>::new("Radar", "FrontLeft", "Counter");
 
     const CACHE_SIZE: u32 = 5;
-    let (recipient, sample_receive_token) = subscriber.subscribe_mt(CACHE_SIZE);
+    let (subscriber, sample_receive_token) = topic.subscribe_mt(CACHE_SIZE);
 
     let mut has_printed_waiting_for_subscription = false;
-    while recipient.subscription_state() != SubscriptionState::Subscribed {
+    while subscriber.subscription_state() != SubscriptionState::Subscribed {
         if !has_printed_waiting_for_subscription {
             println!("waiting for subscription ...");
             has_printed_waiting_for_subscription = true;
@@ -36,7 +37,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("  -> subscribed");
     }
 
-    let sample_receiver = recipient.get_sample_receiver(sample_receive_token);
+    let sample_receiver = subscriber.get_sample_receiver(sample_receive_token);
 
     let th = thread::spawn(move || {
         loop {
@@ -58,7 +59,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     });
 
     let sample_receiver = th.join().map_err(|_| "could not join threads")?;
-    recipient.unsubscribe(sample_receiver);
+    subscriber.unsubscribe(sample_receiver);
 
     Ok(())
 }

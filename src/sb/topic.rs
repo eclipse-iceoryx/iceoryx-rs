@@ -4,41 +4,42 @@
 // http://www.apache.org/licenses/LICENSE-2.0>. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-mod ffi;
-mod recipient;
-mod sample;
+use super::{ffi, ffi::SubscriptionState};
 
-pub use ffi::SubscriptionState;
-pub use sample::Sample;
-pub use sample::SampleReceiverWaitState;
-
-use recipient::{RecipientMT, RecipientST};
+use super::subscriber::{SubscriberMT, SubscriberST};
 
 use std::marker::PhantomData;
 
 pub struct SampleReceiverToken {}
 
-pub struct Subscriber<T> {
-    ffi_sub: Box<ffi::Subscriber>,
+pub struct Topic<T> {
+    pub(super) ffi_sub: Box<ffi::Subscriber>,
     phantom: PhantomData<T>,
 }
 
-impl<T> Subscriber<T> {
+impl<T> Topic<T> {
     pub fn new(service: &str, instance: &str, event: &str) -> Self {
-        Self {
+        Topic {
             ffi_sub: ffi::Subscriber::new(service, instance, event),
             phantom: PhantomData,
         }
     }
 
-    pub fn subscribe(self, cache_size: u32) -> (RecipientST<T>, SampleReceiverToken) {
-        self.ffi_sub.subscribe(cache_size);
-        (RecipientST::new(self), SampleReceiverToken {})
+    pub(super) fn from_ffi(ffi_sub: Box<ffi::Subscriber>) -> Self {
+        Topic {
+            ffi_sub,
+            phantom: PhantomData,
+        }
     }
 
-    pub fn subscribe_mt(self, cache_size: u32) -> (RecipientMT<T>, SampleReceiverToken) {
+    pub fn subscribe(self, cache_size: u32) -> (SubscriberST<T>, SampleReceiverToken) {
         self.ffi_sub.subscribe(cache_size);
-        (RecipientMT::new(self), SampleReceiverToken {})
+        (SubscriberST::new(self), SampleReceiverToken {})
+    }
+
+    pub fn subscribe_mt(self, cache_size: u32) -> (SubscriberMT<T>, SampleReceiverToken) {
+        self.ffi_sub.subscribe(cache_size);
+        (SubscriberMT::new(self), SampleReceiverToken {})
     }
 
     pub fn subscription_state(&self) -> SubscriptionState {

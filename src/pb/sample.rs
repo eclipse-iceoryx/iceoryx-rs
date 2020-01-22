@@ -4,7 +4,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0>. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use super::service::Service;
+use super::Publisher;
 
 use std::ops::{Deref, DerefMut};
 
@@ -25,7 +25,7 @@ unsafe impl POD for usize {}
 
 pub struct SampleMut<'a, T: POD> {
     pub(super) data: Option<Box<T>>,
-    pub(super) service: &'a Service<T>,
+    pub(super) service: &'a Publisher<T>,
 }
 
 impl<'a, T: POD> Deref for SampleMut<'a, T> {

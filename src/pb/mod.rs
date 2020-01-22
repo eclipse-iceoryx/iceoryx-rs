@@ -4,14 +4,11 @@
 // http://www.apache.org/licenses/LICENSE-2.0>. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-#[macro_use]
-extern crate cpp;
+mod ffi;
+mod publisher;
+mod sample;
+mod topic;
 
-mod error;
-pub mod pb;
-mod runtime;
-pub mod sb;
-
-// re-export structs
-pub use error::IceOryxError;
-pub use runtime::Runtime;
+pub use publisher::Publisher;
+pub use sample::POD;
+pub use topic::Topic;

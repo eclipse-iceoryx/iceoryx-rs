@@ -8,6 +8,9 @@ use std::ffi::CString;
 use std::fmt;
 use std::time::Duration;
 
+use std::rc::Rc;
+use std::sync::Arc;
+
 #[repr(C)]
 #[derive(Debug, PartialEq)]
 pub enum SubscriptionState {
@@ -15,6 +18,55 @@ pub enum SubscriptionState {
     Unsubscribed,
     SubscriptionPending,
 }
+
+pub trait SubscriberStrongRef : Clone {
+    fn new(ffi_sub: Box<Subscriber>) -> Self;
+
+    fn as_ref(&self) -> &Subscriber;
+
+    fn take(self) -> Box<Subscriber>;
+}
+
+pub trait SubscriberWeakRef {
+    fn as_ref(&self) -> Option<&Subscriber>;
+}
+
+pub type SubscriberRc = Rc<Box<Subscriber>>;
+// pub type SubscriberWeakRc = std::rc::Weak<Box<Subscriber>>;
+
+pub type SubscriberArc = Arc<Box<Subscriber>>;
+// pub type SubscriberWeakArc = std::sync::Weak<Box<Subscriber>>;
+
+
+impl SubscriberStrongRef for SubscriberRc {
+    fn new (ffi_sub: Box<Subscriber>) -> Self {
+        Rc::new(ffi_sub)
+    }
+
+    fn as_ref(&self) -> &Subscriber {
+        &*self
+    }
+
+    fn take (self) -> Box<Subscriber> {
+        Rc::try_unwrap(self).expect("Unique owner of subscriber")
+    }
+}
+
+impl SubscriberStrongRef for SubscriberArc {
+    fn new (ffi_sub: Box<Subscriber>) -> Self {
+        Arc::new(ffi_sub)
+    }
+
+    fn as_ref(&self) -> &Subscriber {
+        &*self
+    }
+
+    fn take (self) -> Box<Subscriber> {
+        Arc::try_unwrap(self).expect("Unique owner of subscriber")
+    }
+}
+
+//TODO impl SubscriberWeakRef for ...
 
 cpp! {{
     #include "iceoryx_posh/popo/subscriber.hpp"

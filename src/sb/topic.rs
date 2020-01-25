@@ -5,8 +5,7 @@
 // copied, modified, or distributed except according to those terms.
 
 use super::{ffi, ffi::SubscriptionState};
-
-use super::subscriber::{SubscriberMT, SubscriberST};
+use super::{mt, st};
 
 use std::marker::PhantomData;
 
@@ -32,14 +31,14 @@ impl<T> Topic<T> {
         }
     }
 
-    pub fn subscribe(self, cache_size: u32) -> (SubscriberST<T>, SampleReceiverToken) {
+    pub fn subscribe(self, cache_size: u32) -> (st::Subscriber<T>, SampleReceiverToken) {
         self.ffi_sub.subscribe(cache_size);
-        (SubscriberST::new(self), SampleReceiverToken {})
+        (st::Subscriber::new(self), SampleReceiverToken {})
     }
 
-    pub fn subscribe_mt(self, cache_size: u32) -> (SubscriberMT<T>, SampleReceiverToken) {
+    pub fn subscribe_mt(self, cache_size: u32) -> (mt::Subscriber<T>, SampleReceiverToken) {
         self.ffi_sub.subscribe(cache_size);
-        (SubscriberMT::new(self), SampleReceiverToken {})
+        (mt::Subscriber::new(self), SampleReceiverToken {})
     }
 
     pub fn subscription_state(&self) -> SubscriptionState {

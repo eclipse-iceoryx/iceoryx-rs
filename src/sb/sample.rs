@@ -10,15 +10,13 @@ use std::marker::PhantomData;
 use std::time::{Duration, SystemTime};
 
 use std::ops::Deref;
-use std::rc::Rc;
-use std::sync::Arc;
 
-pub struct Sample<'a, T> {
-    pub(super) data: Option<Box<T>>,
-    pub(super) ffi_sub: &'a ffi::Subscriber,
+pub struct Sample<T , S: ffi::SubscriberStrongRef> {
+    pub data: Option<Box<T>>,
+    ffi_sub: S,
 }
 
-impl<'a, T> Deref for Sample<'a, T> {
+impl<T, S: ffi::SubscriberStrongRef> Deref for Sample<T, S> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -26,78 +24,33 @@ impl<'a, T> Deref for Sample<'a, T> {
     }
 }
 
-impl<'a, T> Drop for Sample<'a, T> {
+impl<T, S: ffi::SubscriberStrongRef> Drop for Sample<T, S> {
     fn drop(&mut self) {
         if let Some(chunk) = self.data.take() {
-            self.ffi_sub.release_chunk(chunk)
+            self.ffi_sub.as_ref().release_chunk(chunk);
         }
     }
 }
 
-pub struct SampleReceiverST<T> {
-    ffi_sub: Rc<Box<ffi::Subscriber>>,
+pub struct SampleReceiver <T, S: ffi::SubscriberStrongRef>{
+    ffi_sub: S,
     phantom: PhantomData<T>,
 }
 
-impl<T> SampleReceiverST<T> {
-    pub(super) fn new(ffi_sub: Rc<Box<ffi::Subscriber>>) -> Self {
-        Self {
+impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
+    pub(super) fn new(ffi_sub: S) -> Self {
+        SampleReceiver {
             ffi_sub,
             phantom: PhantomData,
         }
     }
 
     pub fn subscription_state(&self) -> SubscriptionState {
-        self.ffi_sub.subscription_state()
-    }
-
-    pub fn has_samples(&self) -> bool {
-        self.ffi_sub.has_chunks()
-    }
-
-    pub fn clear(&self) {
-        self.ffi_sub.clear();
-    }
-
-    pub fn get_sample(&self) -> Option<Sample<T>> {
-        self.ffi_sub.get_chunk().map(|chunk| Sample {
-            data: Some(chunk),
-            ffi_sub: &self.ffi_sub,
-        })
-    }
-}
-
-impl<T> Drop for SampleReceiverST<T> {
-    fn drop(&mut self) {
-        self.ffi_sub.unsubscribe();
-    }
-}
-
-pub enum SampleReceiverWaitState {
-    SamplesAvailable,
-    Timeout,
-    Stopped,
-}
-
-pub struct SampleReceiverMT<T> {
-    ffi_sub: Arc<Box<ffi::Subscriber>>,
-    phantom: PhantomData<T>,
-}
-
-impl<T> SampleReceiverMT<T> {
-    pub(super) fn new(ffi_sub: Arc<Box<ffi::Subscriber>>) -> Self {
-        Self {
-            ffi_sub,
-            phantom: PhantomData,
-        }
-    }
-
-    pub fn subscription_state(&self) -> SubscriptionState {
-        self.ffi_sub.subscription_state()
+        self.ffi_sub.as_ref().subscription_state()
     }
 
     pub fn wait_for_samples(&self, timeout: Duration) -> SampleReceiverWaitState {
-        if !self.ffi_sub.wait_for_chunks_enabled() {
+        if !self.ffi_sub.as_ref().wait_for_chunks_enabled() {
             return SampleReceiverWaitState::Stopped;
         }
         if self.has_samples() {
@@ -109,13 +62,13 @@ impl<T> SampleReceiverMT<T> {
             let elapsed = entry_time.elapsed().unwrap_or(timeout);
             timeout.checked_sub(elapsed)
         } {
-            self.ffi_sub.wait_for_chunks(remaining_timeout);
+            self.ffi_sub.as_ref().wait_for_chunks(remaining_timeout);
             if self.has_samples() {
                 return SampleReceiverWaitState::SamplesAvailable;
             }
         }
 
-        if self.ffi_sub.wait_for_chunks_enabled() {
+        if self.ffi_sub.as_ref().wait_for_chunks_enabled() {
             SampleReceiverWaitState::Timeout
         } else {
             SampleReceiverWaitState::Stopped
@@ -123,23 +76,30 @@ impl<T> SampleReceiverMT<T> {
     }
 
     pub fn has_samples(&self) -> bool {
-        self.ffi_sub.has_chunks()
+        self.ffi_sub.as_ref().has_chunks()
     }
 
     pub fn clear(&self) {
-        self.ffi_sub.clear();
+        self.ffi_sub.as_ref().clear();
     }
 
-    pub fn get_sample(&self) -> Option<Sample<T>> {
-        self.ffi_sub.get_chunk().map(|chunk| Sample {
+    pub fn get_sample(&self) -> Option<Sample<T, S>> {
+        self.ffi_sub.as_ref().get_chunk().map(|chunk| Sample::<T, S> {
             data: Some(chunk),
-            ffi_sub: &self.ffi_sub,
+            ffi_sub: self.ffi_sub.clone(),
         })
     }
 }
 
-impl<T> Drop for SampleReceiverMT<T> {
+
+impl<T, S: super::ffi::SubscriberStrongRef> Drop for SampleReceiver<T, S> {
     fn drop(&mut self) {
-        self.ffi_sub.unsubscribe();
+        self.ffi_sub.as_ref().unsubscribe();
     }
+}
+
+pub enum SampleReceiverWaitState {
+    SamplesAvailable,
+    Timeout,
+    Stopped,
 }

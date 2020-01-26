@@ -11,6 +11,7 @@ use std::time::{Duration, SystemTime};
 
 use std::ops::Deref;
 
+//TODO impl debug for Sample with T: Debug
 pub struct Sample<T , S: ffi::SubscriberStrongRef> {
     pub data: Option<Box<T>>,
     ffi_sub: S,

@@ -10,9 +10,9 @@ use std::env;
 use std::process::Command;
 
 fn make_and_install(
-    source_dir: &String,
-    build_dir: &String,
-    install_dir: &String,
+    source_dir: &str,
+    build_dir: &str,
+    install_dir: &str,
 ) -> std::io::Result<()> {
     let cmake_install_prefix = format!("-DCMAKE_INSTALL_PREFIX={}", install_dir);
 
@@ -80,10 +80,10 @@ fn main() -> std::io::Result<()> {
 
     println!("cargo:rustc-link-search={}", iceoryx_lib_dir);
 
-    println!("cargo:rustc-link-lib={}", "iceoryx_posh_roudi");
-    println!("cargo:rustc-link-lib={}", "iceoryx_posh");
-    println!("cargo:rustc-link-lib={}", "iceoryx_utils");
-    println!("cargo:rustc-link-lib={}", "stdc++");
+    println!("cargo:rustc-link-lib=iceoryx_posh_roudi");
+    println!("cargo:rustc-link-lib=iceoryx_posh");
+    println!("cargo:rustc-link-lib=iceoryx_utils");
+    println!("cargo:rustc-link-lib=stdc++");
 
     Ok(())
 }

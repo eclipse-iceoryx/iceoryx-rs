@@ -8,6 +8,7 @@ use crate::sb::Topic;
 
 use std::ffi::CStr;
 use std::marker::PhantomData;
+use std::os::raw::c_char;
 
 cpp! {{
     #include "iceoryx_posh/roudi/introspection_types.hpp"
@@ -32,14 +33,13 @@ pub struct MemPoolInfoContainer<'a> {
     index: usize,
 }
 
-const GROUP_NAME_LENGTH: usize = 32;
-
 #[repr(C)]
 #[derive(Debug)]
 pub struct MemPoolIntrospectionTopic {
     segment_id: u32,
-    writer_group_name: [u8; GROUP_NAME_LENGTH],
-    reader_group_name: [u8; GROUP_NAME_LENGTH],
+    // here the reader/writer group names follow; while they are fixed size c_char array,
+    // we would have to manually keep the length in sync with the C++ part, therefore no direct access
+
     // here the mempool_info follows, but it's in a cxx::Vector container and therefore we cannot directly access it from rust
 }
 
@@ -51,24 +51,28 @@ impl MemPoolIntrospectionTopic {
         self.segment_id
     }
 
-    fn group_name_to_string(group_name: &[u8; GROUP_NAME_LENGTH]) -> Option<String> {
-        let null_position = group_name.iter().position(|&c| c == 0)?;
-
-        Some(
-            CStr::from_bytes_with_nul(&group_name[0..=null_position])
-                .ok()?
-                .to_str()
-                .ok()?
-                .to_string(),
-        )
-    }
-
     pub fn writer_group(&self) -> Option<String> {
-        Self::group_name_to_string(&self.writer_group_name)
+        unsafe {
+            let group_name = cpp!([self as "const MemPoolIntrospectionTopic*"] -> *const c_char as "const char*" {
+                return self->m_writerGroupName;
+            });
+            CStr::from_ptr(group_name)
+                .to_str()
+                .map_or(None, |group_name| Some(group_name.to_string()))
+        }
     }
+
     pub fn reader_group(&self) -> Option<String> {
-        Self::group_name_to_string(&self.reader_group_name)
+        unsafe {
+            let group_name = cpp!([self as "const MemPoolIntrospectionTopic*"] -> *const c_char as "const char*" {
+                return self->m_readerGroupName;
+            });
+            CStr::from_ptr(group_name)
+                .to_str()
+                .map_or(None, |group_name| Some(group_name.to_string()))
+        }
     }
+
     pub fn mempools(&self) -> MemPoolInfoContainer {
         MemPoolInfoContainer {
             parent: &*self,

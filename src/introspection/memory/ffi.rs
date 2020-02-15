@@ -40,13 +40,14 @@ pub struct MemPoolIntrospectionTopic {
     // here the reader/writer group names follow; while they are fixed size c_char array,
     // we would have to manually keep the length in sync with the C++ part, therefore no direct access
 
-    // here the mempool_info follows, but it's in a cxx::Vector container and therefore we cannot directly access it from rust
+    // here the mempool_info follows, but it's in a iox::cxx::Vector container and therefore we cannot directly access it from rust
 }
 
 impl MemPoolIntrospectionTopic {
     pub fn new() -> Topic<Self> {
         Topic::<Self>::new("Introspection", "RouDi_ID", "MemPool")
     }
+
     pub fn segment_id(&self) -> u32 {
         self.segment_id
     }
@@ -83,6 +84,7 @@ impl MemPoolIntrospectionTopic {
 
 impl<'a> Iterator for MemPoolInfoContainer<'a> {
     type Item = &'a MemPoolInfo;
+
     fn next(&mut self) -> Option<Self::Item> {
         let topic = self.parent;
         let index = self.index;

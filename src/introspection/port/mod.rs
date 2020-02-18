@@ -4,11 +4,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0>. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-mod memory;
-mod port;
-mod process;
+mod ffi;
 
-pub use memory::MemPoolIntrospectionTopic;
-pub use port::PortIntrospectionTopic;
-pub use port::ServiceDescription;
-pub use process::ProcessIntrospectionTopic;
+pub use ffi::PortIntrospectionTopic;
+pub use ffi::ServiceDescription;

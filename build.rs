@@ -83,6 +83,7 @@ fn main() -> std::io::Result<()> {
     println!("cargo:rustc-link-lib=iceoryx_posh_roudi");
     println!("cargo:rustc-link-lib=iceoryx_posh");
     println!("cargo:rustc-link-lib=iceoryx_utils");
+    println!("cargo:rustc-link-lib=iceoryx_platform");
     println!("cargo:rustc-link-lib=stdc++");
 
     Ok(())

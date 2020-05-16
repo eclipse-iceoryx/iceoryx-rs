@@ -71,6 +71,8 @@ impl SubscriberStrongRef for SubscriberArc {
 cpp! {{
     #include "iceoryx_posh/popo/subscriber.hpp"
 
+    using iox::capro::IdString;
+    using iox::cxx::TruncateToCapacity;
     using iox::popo::Subscriber;
     using iox::popo::SubscriptionState;
 }}
@@ -87,7 +89,11 @@ impl Subscriber {
         let event = event.as_ptr();
         unsafe {
             let raw = cpp!([service as "const char *", instance as "const char *", event as "const char *"] -> *mut Subscriber as "Subscriber*" {
-                return new Subscriber(iox::capro::ServiceDescription(service, instance, event), "");
+                return new Subscriber({
+                    IdString(TruncateToCapacity, service),
+                    IdString(TruncateToCapacity, instance),
+                    IdString(TruncateToCapacity, event)
+                });
             });
 
             Box::from_raw(raw)

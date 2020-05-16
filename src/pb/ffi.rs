@@ -11,6 +11,8 @@ use std::ffi::CString;
 cpp! {{
     #include "iceoryx_posh/popo/publisher.hpp"
 
+    using iox::capro::IdString;
+    using iox::cxx::TruncateToCapacity;
     using iox::popo::Publisher;
 }}
 
@@ -26,7 +28,11 @@ impl Publisher {
         let event = event.as_ptr();
         unsafe {
             let raw = cpp!([service as "const char *", instance as "const char *", event as "const char *"] -> *mut Publisher as "Publisher*" {
-                return new Publisher({service, instance, event});
+                return new Publisher({
+                    IdString(TruncateToCapacity, service),
+                    IdString(TruncateToCapacity, instance),
+                    IdString(TruncateToCapacity, event)
+                });
             });
 
             Box::from_raw(raw)

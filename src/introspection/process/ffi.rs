@@ -33,7 +33,7 @@ impl ProcessIntrospectionData {
     pub fn name(&self) -> Option<String> {
         unsafe {
             let name = cpp!([self as "const ProcessIntrospectionData*"] -> *const c_char as "const char*" {
-                return self->m_name.to_cstring();
+                return self->m_name.c_str();
             });
             CStr::from_ptr(name)
                 .to_str()

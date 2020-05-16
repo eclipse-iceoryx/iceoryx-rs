@@ -47,7 +47,7 @@ pub struct SenderPortData {
 fn process_name<Port>(port: &Port) -> Option<String> {
     unsafe {
         let name = cpp!([port as "const PortData*"] -> *const c_char as "const char*" {
-            return port->m_name.to_cstring();
+            return port->m_name.c_str();
         });
         CStr::from_ptr(name)
             .to_str()
@@ -58,7 +58,7 @@ fn process_name<Port>(port: &Port) -> Option<String> {
 fn service_id<Port>(port: &Port) -> Option<String> {
     unsafe {
         let name = cpp!([port as "const PortData*"] -> *const c_char as "const char*" {
-            return port->m_caproServiceID.to_cstring();
+            return port->m_caproServiceID.c_str();
         });
         CStr::from_ptr(name)
             .to_str()
@@ -69,7 +69,7 @@ fn service_id<Port>(port: &Port) -> Option<String> {
 fn instance_id<Port>(port: &Port) -> Option<String> {
     unsafe {
         let name = cpp!([port as "const PortData*"] -> *const c_char as "const char*" {
-            return port->m_caproInstanceID.to_cstring();
+            return port->m_caproInstanceID.c_str();
         });
         CStr::from_ptr(name)
             .to_str()
@@ -80,7 +80,7 @@ fn instance_id<Port>(port: &Port) -> Option<String> {
 fn event_id<Port>(port: &Port) -> Option<String> {
     unsafe {
         let name = cpp!([port as "const PortData*"] -> *const c_char as "const char*" {
-            return port->m_caproEventMethodID.to_cstring();
+            return port->m_caproEventMethodID.c_str();
         });
         CStr::from_ptr(name)
             .to_str()
@@ -91,7 +91,7 @@ fn event_id<Port>(port: &Port) -> Option<String> {
 fn runnable_name<Port>(port: &Port) -> Option<String> {
     unsafe {
         let name = cpp!([port as "const PortData*"] -> *const c_char as "const char*" {
-            return port->m_runnable.to_cstring();
+            return port->m_runnable.c_str();
         });
         CStr::from_ptr(name)
             .to_str()

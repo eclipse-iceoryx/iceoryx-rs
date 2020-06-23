@@ -22,11 +22,11 @@ pub struct Runtime {}
 static RUNTIME: Runtime = Runtime {};
 
 impl Runtime {
-    pub fn get_intance(app_name: &str) -> &'static Self {
+    pub fn get_instance(app_name: &str) -> &'static Self {
         let app_name = CString::new(app_name).expect("CString::new failed");
         let app_name = app_name.as_ptr();
         unsafe {
-            // TODO reenable once the Runtime is again aligned to 8 bytes
+            // TODO re-enable once the Runtime is again aligned to 8 bytes
             // return cpp!([app_name as "const char *"] -> &Runtime as "PoshRuntime*" {
             //     return &PoshRuntime::getInstance(app_name);
             cpp!([app_name as "const char *"] {

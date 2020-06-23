@@ -17,7 +17,7 @@ struct CounterTopic {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    Runtime::get_intance("/subscriber_multithreaded");
+    Runtime::get_instance("/subscriber_multithreaded");
 
     let topic = Topic::<CounterTopic>::new("Radar", "FrontLeft", "Counter");
 

@@ -19,7 +19,7 @@ struct CounterTopic {
 unsafe impl POD for CounterTopic {}
 
 fn main() -> Result<(), Box<dyn Error>> {
-    Runtime::get_intance("/publisher_simple");
+    Runtime::get_instance("/publisher_simple");
 
     let topic = Topic::<CounterTopic>::new("Radar", "FrontLeft", "Counter");
 

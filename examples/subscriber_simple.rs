@@ -16,7 +16,7 @@ struct CounterTopic {
 }
 
 fn main() {
-    Runtime::get_intance("/subscriber_simple");
+    Runtime::get_instance("/subscriber_simple");
 
     let topic = Topic::<CounterTopic>::new("Radar", "FrontLeft", "Counter");
 

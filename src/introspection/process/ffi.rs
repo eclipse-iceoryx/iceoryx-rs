@@ -20,7 +20,7 @@ cpp! {{
 #[derive(Debug)]
 pub struct ProcessIntrospectionData {
     pid: i32,
-    // here the process name follows, but it's a iox::cxx::stringg and therefore we cannot directly access it
+    // here the process name follows, but it's a iox::cxx::string and therefore we cannot directly access it
 
     // here the runnable names follow, but it's in a iox::cxx::Vector container and therefore we cannot directly access it from rust
 }

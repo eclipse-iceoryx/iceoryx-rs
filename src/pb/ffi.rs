@@ -9,17 +9,19 @@ use crate::IceOryxError;
 use std::ffi::CString;
 
 cpp! {{
-    #include "iceoryx_posh/popo/publisher.hpp"
+    #include "iceoryx_posh/internal/popo/ports/publisher_port_user.hpp"
+    #include "iceoryx_posh/runtime/posh_runtime.hpp"
 
     using iox::capro::IdString;
     using iox::cxx::TruncateToCapacity;
-    using iox::popo::Publisher;
+    using iox::popo::PublisherPortUser;
+    using iox::runtime::PoshRuntime;
 }}
 
-cpp_class!(pub unsafe struct Publisher as "Publisher");
+cpp_class!(pub unsafe struct Publisher as "PublisherPortUser");
 
 impl Publisher {
-    pub fn new(service: &str, instance: &str, event: &str) -> Box<Self> {
+    pub fn new(service: &str, instance: &str, event: &str, history_capacity: u64) -> Option<Box<Self>> {
         let service = CString::new(service).expect("CString::new failed");
         let service = service.as_ptr();
         let instance = CString::new(instance).expect("CString::new failed");
@@ -27,29 +29,25 @@ impl Publisher {
         let event = CString::new(event).expect("CString::new failed");
         let event = event.as_ptr();
         unsafe {
-            let raw = cpp!([service as "const char *", instance as "const char *", event as "const char *"] -> *mut Publisher as "Publisher*" {
-                return new Publisher({
-                    IdString(TruncateToCapacity, service),
-                    IdString(TruncateToCapacity, instance),
-                    IdString(TruncateToCapacity, event)
-                });
+            let raw = cpp!([service as "const char *", instance as "const char *", event as "const char *", history_capacity as "uint64_t"] -> *mut Publisher as "PublisherPortUser*" {
+                auto portData = PoshRuntime::getInstance().getMiddlewarePublisher(
+                    {
+                        IdString(TruncateToCapacity, service),
+                        IdString(TruncateToCapacity, instance),
+                        IdString(TruncateToCapacity, event)
+                    },
+                    history_capacity
+                );
+                return new PublisherPortUser(portData);
             });
 
-            Box::from_raw(raw)
+            if raw.is_null() { None } else { Some(Box::from_raw(raw)) }
         }
-    }
-
-    pub fn enable_delivery_on_subscription(&self) {
-        unsafe {
-            cpp!([self as "Publisher*"] {
-                self->enableDoDeliverOnSubscription();
-            });
-        };
     }
 
     pub fn offer(&self) {
         unsafe {
-            cpp!([self as "Publisher*"] {
+            cpp!([self as "PublisherPortUser*"] {
                 self->offer();
             });
         }
@@ -57,15 +55,23 @@ impl Publisher {
 
     pub fn stop_offer(&self) {
         unsafe {
-            cpp!([self as "Publisher*"] {
+            cpp!([self as "PublisherPortUser*"] {
                 self->stopOffer();
+            });
+        }
+    }
+
+    pub fn is_offered(&self) -> bool {
+        unsafe {
+            return cpp!([self as "PublisherPortUser*"] -> bool as "bool" {
+                return self->isOffered();
             });
         }
     }
 
     pub fn has_subscribers(&self) -> bool {
         unsafe {
-            return cpp!([self as "Publisher*"] -> bool as "bool" {
+            return cpp!([self as "PublisherPortUser*"] -> bool as "bool" {
                 return self->hasSubscribers();
             });
         }
@@ -74,8 +80,13 @@ impl Publisher {
     pub fn allocate_chunk<T>(&self) -> Result<Box<T>, IceOryxError> {
         let payload_size = std::mem::size_of::<T>() as u32;
         unsafe {
-            let chunk = cpp!([self as "Publisher*", payload_size as "uint32_t"] -> *mut std::ffi::c_void as "void*" {
-                return self->allocateChunk(payload_size);
+            let chunk = cpp!([self as "PublisherPortUser*", payload_size as "uint32_t"] -> *mut std::ffi::c_void as "void*" {
+                auto allocResult = self->tryAllocateChunk(payload_size);
+                if (allocResult.has_error()) {
+                    return nullptr;
+                } else {
+                    return allocResult.value()->payload();
+                }
             });
 
             if !chunk.is_null() {
@@ -89,8 +100,9 @@ impl Publisher {
     pub fn free_chunk<T>(&self, chunk: Box<T>) {
         unsafe {
             let chunk = Box::into_raw(chunk);
-            cpp!([self as "Publisher*", chunk as "void*"] {
-                self->freeChunk(chunk);
+            cpp!([self as "PublisherPortUser*", chunk as "void*"] {
+                auto header = iox::mepoo::convertPayloadPointerToChunkHeader(chunk);
+                self->freeChunk(header);
             });
         }
     }
@@ -98,8 +110,9 @@ impl Publisher {
     pub fn send_chunk<T>(&self, chunk: Box<T>) {
         unsafe {
             let chunk = Box::into_raw(chunk);
-            cpp!([self as "Publisher*", chunk as "void*"] {
-                self->sendChunk(chunk);
+            cpp!([self as "PublisherPortUser*", chunk as "void*"] {
+                auto header = iox::mepoo::convertPayloadPointerToChunkHeader(chunk);
+                self->sendChunk(header);
             });
         }
     }

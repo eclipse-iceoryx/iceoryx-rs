@@ -16,6 +16,10 @@ impl<T: POD> Publisher<T> {
         Publisher { publisher }
     }
 
+    pub fn is_offered(&self) -> bool {
+        self.publisher.ffi_pub.is_offered()
+    }
+
     pub fn stop(self) -> Topic<T> {
         self.publisher.ffi_pub.stop_offer();
         self.publisher

@@ -19,13 +19,17 @@ struct CounterTopic {
 unsafe impl POD for CounterTopic {}
 
 fn main() -> Result<(), Box<dyn Error>> {
-    Runtime::get_instance("/publisher_simple");
+    Runtime::init("/publisher_simple");
 
-    let topic = Topic::<CounterTopic>::new("Radar", "FrontLeft", "Counter");
+    const HISTORY_CAPACITY: u64 = 0;
+    let topic = Topic::<CounterTopic>::new("Radar", "FrontLeft", "Counter", HISTORY_CAPACITY)?;
 
     let publisher = topic.offer();
+
     // wait until RouDi runs the discovery loop
-    thread::sleep(Duration::from_millis(100));
+    while !publisher.is_offered() {
+        thread::sleep(Duration::from_millis(10));
+    }
 
     let mut counter = 0u32;
     loop {

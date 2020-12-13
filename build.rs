@@ -76,6 +76,7 @@ fn main() -> std::io::Result<()> {
     cpp_build::Config::new()
         .include(iceoryx_include_dir)
         .flag("-Wno-noexcept-type")
+        .flag("-std=c++14")
         .build("src/lib.rs");
 
     println!("cargo:rustc-link-search={}", iceoryx_lib_dir);

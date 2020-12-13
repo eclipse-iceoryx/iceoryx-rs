@@ -15,38 +15,16 @@ pub struct Topic<T: POD> {
 }
 
 impl<T: POD> Topic<T> {
-    pub fn new(service: &str, instance: &str, event: &str) -> Self {
-        Topic {
-            ffi_pub: FfiPublisher::new(service, instance, event),
-            phantom: PhantomData,
-        }
-    }
-
-    // TODO create a disableDoDeliveryOnSubscription() in iceory and
-    // change this to an offer_with_delivery_on_subscription()
-    pub fn new_with_delivery_on_subscription(
-        service: &str,
-        instance: &str,
-        event: &str,
-        data: T,
-    ) -> Result<Self, IceOryxError> {
-        let ffi_pub = FfiPublisher::new(service, instance, event);
-
-        ffi_pub.enable_delivery_on_subscription();
-
-        let mut chunk = ffi_pub.allocate_chunk::<T>()?;
-        *chunk = data;
-        ffi_pub.send_chunk::<T>(chunk);
+    pub fn new(service: &str, instance: &str, event: &str, history_capacity: u64) -> Result<Self, IceOryxError> {
+        let ffi_pub = FfiPublisher::new(service, instance, event, history_capacity);
 
         Ok(Topic {
-            ffi_pub,
+            ffi_pub: ffi_pub.ok_or(IceOryxError::PublisherTopicCreationFailed)?,
             phantom: PhantomData,
         })
     }
 
     pub fn offer(self) -> Publisher<T> {
-        // TODO since the RouDi discovery loop introduces a latency until the service is offered,
-        // a OfferState, similar to the SubscriptionState might be a worthwhile idea
         self.ffi_pub.offer();
         Publisher::new(self)
     }

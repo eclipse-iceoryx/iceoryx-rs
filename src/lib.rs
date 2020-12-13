@@ -10,9 +10,9 @@ extern crate cpp;
 mod error;
 mod runtime;
 
-pub mod introspection;
+//pub mod introspection;
 pub mod pb;
-pub mod sb;
+//pub mod sb;
 
 // re-export structs
 pub use error::IceOryxError;

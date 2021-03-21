@@ -5,8 +5,8 @@
 // copied, modified, or distributed except according to those terms.
 
 use super::{
-    ffi::SubscriberStrongRef, sample::SampleReceiver, topic::SampleReceiverToken,
-    SubscriptionState, Topic,
+    ffi::SubscriberStrongRef, sample::SampleReceiver, topic::SampleReceiverToken, SubscribeState,
+    Topic,
 };
 
 use std::marker::PhantomData;
@@ -24,7 +24,7 @@ impl<T, S: SubscriberStrongRef> Subscriber<T, S> {
         }
     }
 
-    pub fn subscription_state(&self) -> SubscriptionState {
+    pub fn subscription_state(&self) -> SubscribeState {
         self.ffi_sub.as_ref().subscription_state()
     }
 

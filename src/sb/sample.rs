@@ -4,7 +4,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0>. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use super::{ffi, SubscriptionState};
+use super::{ffi, SubscribeState};
 
 use std::marker::PhantomData;
 use std::time::{Duration, SystemTime};
@@ -12,7 +12,7 @@ use std::time::{Duration, SystemTime};
 use std::ops::Deref;
 
 //TODO impl debug for Sample with T: Debug
-pub struct Sample<T , S: ffi::SubscriberStrongRef> {
+pub struct Sample<T, S: ffi::SubscriberStrongRef> {
     pub data: Option<Box<T>>,
     ffi_sub: S,
 }
@@ -33,7 +33,7 @@ impl<T, S: ffi::SubscriberStrongRef> Drop for Sample<T, S> {
     }
 }
 
-pub struct SampleReceiver <T, S: ffi::SubscriberStrongRef>{
+pub struct SampleReceiver<T, S: ffi::SubscriberStrongRef> {
     ffi_sub: S,
     phantom: PhantomData<T>,
 }
@@ -46,7 +46,7 @@ impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
         }
     }
 
-    pub fn subscription_state(&self) -> SubscriptionState {
+    pub fn subscription_state(&self) -> SubscribeState {
         self.ffi_sub.as_ref().subscription_state()
     }
 
@@ -85,13 +85,15 @@ impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
     }
 
     pub fn get_sample(&self) -> Option<Sample<T, S>> {
-        self.ffi_sub.as_ref().get_chunk().map(|chunk| Sample::<T, S> {
-            data: Some(chunk),
-            ffi_sub: self.ffi_sub.clone(),
-        })
+        self.ffi_sub
+            .as_ref()
+            .get_chunk()
+            .map(|chunk| Sample::<T, S> {
+                data: Some(chunk),
+                ffi_sub: self.ffi_sub.clone(),
+            })
     }
 }
-
 
 impl<T, S: super::ffi::SubscriberStrongRef> Drop for SampleReceiver<T, S> {
     fn drop(&mut self) {

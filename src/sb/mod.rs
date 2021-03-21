@@ -9,7 +9,7 @@ mod sample;
 mod subscriber;
 mod topic;
 
-pub use ffi::SubscriptionState;
+pub use ffi::SubscribeState;
 pub use sample::Sample;
 pub use sample::SampleReceiverWaitState;
 pub use topic::Topic;

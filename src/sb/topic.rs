@@ -4,7 +4,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0>. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use super::{ffi, ffi::SubscriptionState};
+use super::{ffi, ffi::SubscribeState};
 use super::{mt, st};
 
 use std::marker::PhantomData;
@@ -31,17 +31,17 @@ impl<T> Topic<T> {
         }
     }
 
-    pub fn subscribe(self, cache_size: u32) -> (st::Subscriber<T>, SampleReceiverToken) {
-        self.ffi_sub.subscribe(cache_size);
+    pub fn subscribe(self, queue_capacity: u64) -> (st::Subscriber<T>, SampleReceiverToken) {
+        self.ffi_sub.subscribe(queue_capacity);
         (st::Subscriber::new(self), SampleReceiverToken {})
     }
 
-    pub fn subscribe_mt(self, cache_size: u32) -> (mt::Subscriber<T>, SampleReceiverToken) {
-        self.ffi_sub.subscribe(cache_size);
+    pub fn subscribe_mt(self, queue_capacity: u64) -> (mt::Subscriber<T>, SampleReceiverToken) {
+        self.ffi_sub.subscribe(queue_capacity);
         (mt::Subscriber::new(self), SampleReceiverToken {})
     }
 
-    pub fn subscription_state(&self) -> SubscriptionState {
+    pub fn subscription_state(&self) -> SubscribeState {
         self.ffi_sub.subscription_state()
     }
 }

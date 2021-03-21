@@ -4,7 +4,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0>. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use iceoryx_rs::sb::{SubscriptionState, Topic};
+use iceoryx_rs::sb::{SubscribeState, Topic};
 use iceoryx_rs::Runtime;
 
 use std::thread;
@@ -16,15 +16,15 @@ struct CounterTopic {
 }
 
 fn main() {
-    Runtime::get_instance("/subscriber_simple");
+    Runtime::init("/subscriber_simple");
 
     let topic = Topic::<CounterTopic>::new("Radar", "FrontLeft", "Counter");
 
-    const CACHE_SIZE: u32 = 5;
-    let (subscriber, sample_receive_token) = topic.subscribe(CACHE_SIZE);
+    const QUEUE_CAPACITY: u64 = 5;
+    let (subscriber, sample_receive_token) = topic.subscribe(QUEUE_CAPACITY);
 
     let mut has_printed_waiting_for_subscription = false;
-    while subscriber.subscription_state() != SubscriptionState::Subscribed {
+    while subscriber.subscription_state() != SubscribeState::Subscribed {
         if !has_printed_waiting_for_subscription {
             println!("waiting for subscription ...");
             has_printed_waiting_for_subscription = true;

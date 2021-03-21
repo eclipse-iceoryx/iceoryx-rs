@@ -4,7 +4,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0>. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use super::{ffi, ffi::SubscribeState};
+use super::{ffi, ffi::SubscribeState, SubscriberOptions};
 use super::{mt, st};
 
 use std::marker::PhantomData;
@@ -17,9 +17,9 @@ pub struct Topic<T> {
 }
 
 impl<T> Topic<T> {
-    pub fn new(service: &str, instance: &str, event: &str) -> Self {
+    pub fn new(service: &str, instance: &str, event: &str, options: &SubscriberOptions) -> Self {
         Topic {
-            ffi_sub: ffi::Subscriber::new(service, instance, event),
+            ffi_sub: ffi::Subscriber::new(service, instance, event, options),
             phantom: PhantomData,
         }
     }
@@ -31,13 +31,13 @@ impl<T> Topic<T> {
         }
     }
 
-    pub fn subscribe(self, queue_capacity: u64) -> (st::Subscriber<T>, SampleReceiverToken) {
-        self.ffi_sub.subscribe(queue_capacity);
+    pub fn subscribe(self) -> (st::Subscriber<T>, SampleReceiverToken) {
+        self.ffi_sub.subscribe();
         (st::Subscriber::new(self), SampleReceiverToken {})
     }
 
-    pub fn subscribe_mt(self, queue_capacity: u64) -> (mt::Subscriber<T>, SampleReceiverToken) {
-        self.ffi_sub.subscribe(queue_capacity);
+    pub fn subscribe_mt(self) -> (mt::Subscriber<T>, SampleReceiverToken) {
+        self.ffi_sub.subscribe();
         (mt::Subscriber::new(self), SampleReceiverToken {})
     }
 

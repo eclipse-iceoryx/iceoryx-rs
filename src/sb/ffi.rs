@@ -4,6 +4,8 @@
 // http://www.apache.org/licenses/LICENSE-2.0>. This file may not be
 // copied, modified, or distributed except according to those terms.
 
+use crate::sb::SubscriberOptions;
+
 use std::ffi::CString;
 use std::fmt;
 use std::time::Duration;
@@ -74,8 +76,9 @@ cpp! {{
     #include "iceoryx_posh/runtime/posh_runtime.hpp"
 
     using iox::SubscribeState;
-    using iox::capro::IdString;
+    using iox::capro::IdString_t;
     using iox::cxx::TruncateToCapacity;
+    using iox::popo::SubscriberOptions;
     using iox::popo::SubscriberPortUser;
     using iox::runtime::PoshRuntime;
 }}
@@ -83,21 +86,45 @@ cpp! {{
 cpp_class!(pub unsafe struct Subscriber as "SubscriberPortUser");
 
 impl Subscriber {
-    pub fn new(service: &str, instance: &str, event: &str) -> Box<Self> {
+    pub fn new(
+        service: &str,
+        instance: &str,
+        event: &str,
+        options: &SubscriberOptions,
+    ) -> Box<Self> {
         let service = CString::new(service).expect("CString::new failed");
         let service = service.as_ptr();
         let instance = CString::new(instance).expect("CString::new failed");
         let instance = instance.as_ptr();
         let event = CString::new(event).expect("CString::new failed");
         let event = event.as_ptr();
+        let queue_capacity = options.queue_capacity;
+        let history_request = options.history_request;
+        let node_name = CString::new(&options.node_name as &str).expect("CString::new failed");
+        let node_name = node_name.as_ptr();
+        let subscribe_on_create = options.subscribe_on_create;
         unsafe {
-            let raw = cpp!([service as "const char *", instance as "const char *", event as "const char *"] -> *mut Subscriber as "SubscriberPortUser*" {
+            let raw = cpp!([service as "const char *",
+                            instance as "const char *",
+                            event as "const char *",
+                            queue_capacity as "uint64_t",
+                            history_request as "uint64_t",
+                            node_name as "const char *",
+                            subscribe_on_create as "bool"]
+                            -> *mut Subscriber as "SubscriberPortUser*"
+            {
+                SubscriberOptions options;
+                options.queueCapacity = queue_capacity;
+                options.historyRequest = history_request;
+                options.nodeName = IdString_t(TruncateToCapacity, node_name);
+                options.subscribeOnCreate = subscribe_on_create;
                 auto portData = PoshRuntime::getInstance().getMiddlewareSubscriber(
                     {
-                        IdString(TruncateToCapacity, service),
-                        IdString(TruncateToCapacity, instance),
-                        IdString(TruncateToCapacity, event)
-                    }
+                        IdString_t(TruncateToCapacity, service),
+                        IdString_t(TruncateToCapacity, instance),
+                        IdString_t(TruncateToCapacity, event)
+                    },
+                    options
                 );
                 return new SubscriberPortUser(portData);
             });
@@ -106,10 +133,10 @@ impl Subscriber {
         }
     }
 
-    pub fn subscribe(&self, queue_capacity: u64) {
+    pub fn subscribe(&self) {
         unsafe {
-            cpp!([self as "SubscriberPortUser*", queue_capacity as "uint64_t"] {
-                self->subscribe(queue_capacity);
+            cpp!([self as "SubscriberPortUser*"] {
+                self->subscribe();
             });
         }
     }
@@ -198,9 +225,7 @@ impl Subscriber {
                     return nullptr;
                 }
 
-                auto maybeChunkHeader = getChunkResult.value();
-
-                return maybeChunkHeader ? maybeChunkHeader.value()->payload() : nullptr;
+                return getChunkResult.value()->payload();
             });
 
             if !chunk.is_null() {
@@ -216,7 +241,7 @@ impl Subscriber {
             let chunk = Box::into_raw(chunk);
             let mut chunk = &*chunk;
             cpp!([self as "SubscriberPortUser*", mut chunk as "void*"] {
-                auto header = iox::mepoo::convertPayloadPointerToChunkHeader(chunk);
+                auto header = iox::mepoo::ChunkHeader::fromPayload(chunk);
                 self->releaseChunk(header);
             });
         }

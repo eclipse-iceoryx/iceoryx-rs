@@ -6,9 +6,11 @@
 
 mod ffi;
 mod publisher;
+mod publisher_options;
 mod sample;
 mod topic;
 
 pub use publisher::Publisher;
+pub use publisher_options::PublisherOptions;
 pub use sample::POD;
 pub use topic::Topic;

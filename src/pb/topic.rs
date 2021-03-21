@@ -4,7 +4,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0>. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use super::{ffi::Publisher as FfiPublisher, Publisher, POD};
+use super::{ffi::Publisher as FfiPublisher, Publisher, PublisherOptions, POD};
 use crate::IceOryxError;
 
 use std::marker::PhantomData;
@@ -15,8 +15,8 @@ pub struct Topic<T: POD> {
 }
 
 impl<T: POD> Topic<T> {
-    pub fn new(service: &str, instance: &str, event: &str, history_capacity: u64) -> Result<Self, IceOryxError> {
-        let ffi_pub = FfiPublisher::new(service, instance, event, history_capacity);
+    pub fn new(service: &str, instance: &str, event: &str, options: &PublisherOptions) -> Result<Self, IceOryxError> {
+        let ffi_pub = FfiPublisher::new(service, instance, event, options);
 
         Ok(Topic {
             ffi_pub: ffi_pub.ok_or(IceOryxError::PublisherTopicCreationFailed)?,

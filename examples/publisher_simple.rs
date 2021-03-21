@@ -4,7 +4,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0>. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use iceoryx_rs::pb::{Topic, POD};
+use iceoryx_rs::pb::{PublisherOptions, Topic, POD};
 use iceoryx_rs::Runtime;
 
 use std::error::Error;
@@ -19,10 +19,10 @@ struct CounterTopic {
 unsafe impl POD for CounterTopic {}
 
 fn main() -> Result<(), Box<dyn Error>> {
-    Runtime::init("/publisher_simple");
+    Runtime::init("publisher_simple");
 
-    const HISTORY_CAPACITY: u64 = 0;
-    let topic = Topic::<CounterTopic>::new("Radar", "FrontLeft", "Counter", HISTORY_CAPACITY)?;
+    let topic =
+        Topic::<CounterTopic>::new("Radar", "FrontLeft", "Counter", &PublisherOptions::default())?;
 
     let publisher = topic.offer();
 

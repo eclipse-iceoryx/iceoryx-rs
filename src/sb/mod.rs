@@ -7,11 +7,13 @@
 mod ffi;
 mod sample;
 mod subscriber;
+mod subscriber_options;
 mod topic;
 
 pub use ffi::SubscribeState;
 pub use sample::Sample;
 pub use sample::SampleReceiverWaitState;
+pub use subscriber_options::SubscriberOptions;
 pub use topic::Topic;
 
 pub mod st {
@@ -25,7 +27,7 @@ pub mod st {
 pub mod mt {
     use super::*;
 
-    pub type Sample<T> = sample::Sample<T, ffi::SubscriberRc>;
+    pub type Sample<T> = sample::Sample<T, ffi::SubscriberArc>;
     pub type SampleReceiver<T> = sample::SampleReceiver<T, ffi::SubscriberArc>;
     pub type Subscriber<T> = subscriber::Subscriber<T, ffi::SubscriberArc>;
 }

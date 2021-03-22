@@ -13,8 +13,9 @@ mod topic;
 pub use ffi::SubscribeState;
 pub use sample::Sample;
 pub use sample::SampleReceiverWaitState;
-pub use subscriber_options::SubscriberOptions;
-pub use topic::Topic;
+pub use topic::{Topic, TopicBuilder};
+
+use subscriber_options::SubscriberOptions;
 
 pub mod st {
     use super::*;

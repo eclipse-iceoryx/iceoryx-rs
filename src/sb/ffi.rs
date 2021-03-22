@@ -86,7 +86,7 @@ cpp! {{
 cpp_class!(pub unsafe struct Subscriber as "SubscriberPortUser");
 
 impl Subscriber {
-    pub fn new(
+    pub(super) fn new(
         service: &str,
         instance: &str,
         event: &str,

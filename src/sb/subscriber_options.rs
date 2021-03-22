@@ -6,7 +6,7 @@
 
 use std::marker::PhantomData;
 
-pub struct SubscriberOptions
+pub(super) struct SubscriberOptions
 {
     pub queue_capacity: u64,
     pub history_request: u64,
@@ -18,11 +18,5 @@ pub struct SubscriberOptions
 impl Default for SubscriberOptions {
     fn default() -> Self {
         Self {queue_capacity: 256, history_request: 0, node_name: String::new(), subscribe_on_create: true, _phantom: PhantomData}
-    }
-}
-
-impl SubscriberOptions {
-    pub fn new() -> Self {
-        Self::default()
     }
 }

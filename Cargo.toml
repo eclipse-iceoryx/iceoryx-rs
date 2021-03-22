@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx-rs"
-version = "0.0.8"
+version = "0.0.9"
 authors = ["Mathias Kraus"]
 edition = "2018"
 build = "build.rs"

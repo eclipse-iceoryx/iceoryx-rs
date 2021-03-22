@@ -4,7 +4,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0>. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use iceoryx_rs::sb::{SubscriberOptions, SubscribeState, Topic};
+use iceoryx_rs::sb::{SubscribeState, TopicBuilder};
 use iceoryx_rs::Runtime;
 
 use std::thread;
@@ -18,9 +18,9 @@ struct CounterTopic {
 fn main() {
     Runtime::init("subscriber_simple");
 
-    let mut options = SubscriberOptions::new();
-    options.queue_capacity = 5;
-    let topic = Topic::<CounterTopic>::new("Radar", "FrontLeft", "Counter", &options);
+    let topic = TopicBuilder::<CounterTopic>::new("Radar", "FrontLeft", "Counter")
+        .queue_capacity(5)
+        .build();
 
     let (subscriber, sample_receive_token) = topic.subscribe();
 

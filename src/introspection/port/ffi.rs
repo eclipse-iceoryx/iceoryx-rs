@@ -4,7 +4,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0>. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use crate::sb::Topic;
+use crate::sb::{Topic, TopicBuilder};
 
 use std::ffi::CStr;
 use std::os::raw::c_char;
@@ -13,8 +13,8 @@ cpp! {{
     #include "iceoryx_posh/roudi/introspection_types.hpp"
 
     using iox::roudi::PortData;
-    using iox::roudi::ReceiverPortData;
-    using iox::roudi::SenderPortData;
+    using iox::roudi::SubscriberPortData;
+    using iox::roudi::PublisherPortData;
     using iox::roudi::PortIntrospectionFieldTopic;
 }}
 
@@ -34,13 +34,13 @@ struct PortData {
 
 #[repr(C)]
 #[derive(Debug)]
-pub struct ReceiverPortData {
+pub struct SubscriberPortData {
     port_data: PortData,
 }
 
 #[repr(C)]
 #[derive(Debug)]
-pub struct SenderPortData {
+pub struct PublisherPortData {
     port_data: PortData,
 }
 
@@ -88,10 +88,10 @@ fn event_id<Port>(port: &Port) -> Option<String> {
     }
 }
 
-fn runnable_name<Port>(port: &Port) -> Option<String> {
+fn node_name<Port>(port: &Port) -> Option<String> {
     unsafe {
         let name = cpp!([port as "const PortData*"] -> *const c_char as "const char*" {
-            return port->m_runnable.c_str();
+            return port->m_node.c_str();
         });
         CStr::from_ptr(name)
             .to_str()
@@ -99,7 +99,7 @@ fn runnable_name<Port>(port: &Port) -> Option<String> {
     }
 }
 
-impl ReceiverPortData {
+impl SubscriberPortData {
     pub fn process_name(&self) -> Option<String> {
         process_name(self)
     }
@@ -115,20 +115,12 @@ impl ReceiverPortData {
         }
     }
 
-    pub fn runnable_name(&self) -> Option<String> {
-        runnable_name(self)
-    }
-
-    pub fn corresponding_sernder_port_index(&self) -> i32 {
-        unsafe {
-            cpp!([self as "const ReceiverPortData*"] -> i32 as "int32_t" {
-                return self->m_senderIndex;
-            })
-        }
+    pub fn node_name(&self) -> Option<String> {
+        node_name(self)
     }
 }
 
-impl SenderPortData {
+impl PublisherPortData {
     pub fn process_name(&self) -> Option<String> {
         process_name(self)
     }
@@ -144,25 +136,25 @@ impl SenderPortData {
         }
     }
 
-    pub fn runnable_name(&self) -> Option<String> {
-        runnable_name(self)
+    pub fn node_name(&self) -> Option<String> {
+        node_name(self)
     }
 
-    pub fn internal_sender_port_id(&self) -> u64 {
+    pub fn internal_publisher_port_id(&self) -> u64 {
         unsafe {
-            cpp!([self as "const SenderPortData*"] -> u64 as "uint64_t" {
-                return self->m_senderPortID;
+            cpp!([self as "const PublisherPortData*"] -> u64 as "uint64_t" {
+                return self->m_publisherPortID;
             })
         }
     }
 }
 
-pub struct ReceiverPortIntrospectionContainer<'a> {
+pub struct SubscriberPortIntrospectionContainer<'a> {
     parent: &'a PortIntrospectionTopic,
     index: usize,
 }
 
-pub struct SenderPortIntrospectionContainer<'a> {
+pub struct PublisherPortIntrospectionContainer<'a> {
     parent: &'a PortIntrospectionTopic,
     index: usize,
 }
@@ -170,51 +162,54 @@ pub struct SenderPortIntrospectionContainer<'a> {
 #[repr(C)]
 #[derive(Debug)]
 pub struct PortIntrospectionTopic {
-    // here the receiver/sender port data follows, but it's in a iox::cxx::Vector container and therefore we cannot directly access it from rust
+    // here the subscriber/publisher port data follows, but it's in a iox::cxx::Vector container and therefore we cannot directly access it from rust
 }
 
 impl PortIntrospectionTopic {
     pub fn new() -> Topic<Self> {
-        Topic::<Self>::new("Introspection", "RouDi_ID", "Port")
+        TopicBuilder::<Self>::new("Introspection", "RouDi_ID", "Port")
+            .queue_capacity(1)
+            .history_request(1)
+            .build()
     }
 
-    pub fn receiver_ports(&self) -> ReceiverPortIntrospectionContainer {
-        ReceiverPortIntrospectionContainer {
+    pub fn subscriber_ports(&self) -> SubscriberPortIntrospectionContainer {
+        SubscriberPortIntrospectionContainer {
             parent: &*self,
             index: 0,
         }
     }
 
-    pub fn sender_ports(&self) -> SenderPortIntrospectionContainer {
-        SenderPortIntrospectionContainer {
+    pub fn publisher_ports(&self) -> PublisherPortIntrospectionContainer {
+        PublisherPortIntrospectionContainer {
             parent: &*self,
             index: 0,
         }
     }
 
-    pub fn receiver_port_count(&self) -> usize {
+    pub fn subscriber_port_count(&self) -> usize {
         unsafe {
             cpp!([self as "const PortIntrospectionFieldTopic*"] -> usize as "size_t" {
-                 return self->m_receiverList.size();
+                 return self->m_subscriberList.size();
             })
         }
     }
 
-    pub fn sender_port_count(&self) -> usize {
+    pub fn publisher_port_count(&self) -> usize {
         unsafe {
             cpp!([self as "const PortIntrospectionFieldTopic*"] -> usize as "size_t" {
-                 return self->m_senderList.size();
+                 return self->m_publisherList.size();
             })
         }
     }
 
-    pub fn get_receiver_port(&self, index: usize) -> Option<&ReceiverPortData> {
+    pub fn get_subscriber_port(&self, index: usize) -> Option<&SubscriberPortData> {
         unsafe {
-            let port = cpp!([self as "const PortIntrospectionFieldTopic*", index as "size_t"] -> *const ReceiverPortData as "const ReceiverPortData*" {
-                 if (index >= self->m_receiverList.size()) {
+            let port = cpp!([self as "const PortIntrospectionFieldTopic*", index as "size_t"] -> *const SubscriberPortData as "const SubscriberPortData*" {
+                 if (index >= self->m_subscriberList.size()) {
                     return nullptr;
                  }
-                 return &self->m_receiverList[index];
+                 return &self->m_subscriberList[index];
             });
 
             if !port.is_null() {
@@ -225,13 +220,13 @@ impl PortIntrospectionTopic {
         }
     }
 
-    pub fn get_sender_port(&self, index: usize) -> Option<&SenderPortData> {
+    pub fn get_publisher_port(&self, index: usize) -> Option<&PublisherPortData> {
         unsafe {
-            let port = cpp!([self as "const PortIntrospectionFieldTopic*", index as "size_t"] -> *const SenderPortData as "const SenderPortData*" {
-                 if (index >= self->m_senderList.size()) {
+            let port = cpp!([self as "const PortIntrospectionFieldTopic*", index as "size_t"] -> *const PublisherPortData as "const PublisherPortData*" {
+                 if (index >= self->m_publisherList.size()) {
                     return nullptr;
                  }
-                 return &self->m_senderList[index];
+                 return &self->m_publisherList[index];
             });
 
             if !port.is_null() {
@@ -243,11 +238,11 @@ impl PortIntrospectionTopic {
     }
 }
 
-impl<'a> Iterator for ReceiverPortIntrospectionContainer<'a> {
-    type Item = &'a ReceiverPortData;
+impl<'a> Iterator for SubscriberPortIntrospectionContainer<'a> {
+    type Item = &'a SubscriberPortData;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let port = self.parent.get_receiver_port(self.index);
+        let port = self.parent.get_subscriber_port(self.index);
         if port.is_some() {
             self.index += 1;
         }
@@ -258,7 +253,7 @@ impl<'a> Iterator for ReceiverPortIntrospectionContainer<'a> {
         let topic = self.parent;
         unsafe {
             let size = cpp!([topic as "const PortIntrospectionFieldTopic*"] -> usize as "size_t" {
-                 return topic->m_receiverList.size();
+                 return topic->m_subscriberList.size();
             });
 
             (size, Some(size))
@@ -266,11 +261,11 @@ impl<'a> Iterator for ReceiverPortIntrospectionContainer<'a> {
     }
 }
 
-impl<'a> Iterator for SenderPortIntrospectionContainer<'a> {
-    type Item = &'a SenderPortData;
+impl<'a> Iterator for PublisherPortIntrospectionContainer<'a> {
+    type Item = &'a PublisherPortData;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let port = self.parent.get_sender_port(self.index);
+        let port = self.parent.get_publisher_port(self.index);
         if port.is_some() {
             self.index += 1;
         }
@@ -281,7 +276,7 @@ impl<'a> Iterator for SenderPortIntrospectionContainer<'a> {
         let topic = self.parent;
         unsafe {
             let size = cpp!([topic as "const PortIntrospectionFieldTopic*"] -> usize as "size_t" {
-                 return topic->m_senderList.size();
+                 return topic->m_publisherList.size();
             });
 
             (size, Some(size))

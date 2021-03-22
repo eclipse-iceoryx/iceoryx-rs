@@ -23,7 +23,7 @@ cpp! {{
 cpp_class!(pub unsafe struct Publisher as "PublisherPortUser");
 
 impl Publisher {
-    pub fn new(
+    pub(super) fn new(
         service: &str,
         instance: &str,
         event: &str,

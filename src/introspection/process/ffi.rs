@@ -4,7 +4,7 @@
 // http://www.apache.org/licenses/LICENSE-2.0>. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use crate::sb::Topic;
+use crate::sb::{Topic, TopicBuilder};
 
 use std::ffi::CStr;
 use std::os::raw::c_char;
@@ -22,7 +22,7 @@ pub struct ProcessIntrospectionData {
     pid: i32,
     // here the process name follows, but it's a iox::cxx::string and therefore we cannot directly access it
 
-    // here the runnable names follow, but it's in a iox::cxx::Vector container and therefore we cannot directly access it from rust
+    // here the node names follow, but it's in a iox::cxx::Vector container and therefore we cannot directly access it from rust
 }
 
 impl ProcessIntrospectionData {
@@ -41,10 +41,10 @@ impl ProcessIntrospectionData {
         }
     }
 
-    pub fn runnable_count(&self) -> usize {
+    pub fn node_count(&self) -> usize {
         unsafe {
             cpp!([self as "const ProcessIntrospectionData*"] -> usize as "size_t" {
-                 return self->m_runnables.size();
+                 return self->m_nodes.size();
             })
         }
     }
@@ -63,7 +63,10 @@ pub struct ProcessIntrospectionTopic {
 
 impl ProcessIntrospectionTopic {
     pub fn new() -> Topic<Self> {
-        Topic::<Self>::new("Introspection", "RouDi_ID", "Process")
+        TopicBuilder::<Self>::new("Introspection", "RouDi_ID", "Process")
+            .queue_capacity(1)
+            .history_request(1)
+            .build()
     }
 
     pub fn processes(&self) -> ProcessIntrospectionContainer {

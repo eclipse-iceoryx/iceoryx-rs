@@ -107,7 +107,10 @@ impl Publisher {
         let payload_size = std::mem::size_of::<T>() as u32;
         unsafe {
             let chunk = cpp!([self as "PublisherPortUser*", payload_size as "uint32_t"] -> *mut std::ffi::c_void as "void*" {
-                auto allocResult = self->tryAllocateChunk(payload_size);
+                auto allocResult = self->tryAllocateChunk(payload_size,
+                                                          iox::CHUNK_DEFAULT_PAYLOAD_ALIGNMENT,
+                                                          iox::CHUNK_NO_CUSTOM_HEADER_SIZE,
+                                                          iox::CHUNK_NO_CUSTOM_HEADER_ALIGNMENT);
                 if (allocResult.has_error()) {
                     return nullptr;
                 } else {

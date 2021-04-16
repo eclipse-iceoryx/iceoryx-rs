@@ -1,8 +1,9 @@
 [package]
 name = "iceoryx-rs"
 version = "0.0.9"
-authors = ["Mathias Kraus"]
+authors = ["Mathias »Bob« Kraus <k.hias@gmx.de>"]
 edition = "2018"
+license = "Apache-2.0"
 build = "build.rs"
 
 [lib]

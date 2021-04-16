@@ -108,13 +108,13 @@ impl Publisher {
         unsafe {
             let chunk = cpp!([self as "PublisherPortUser*", payload_size as "uint32_t"] -> *mut std::ffi::c_void as "void*" {
                 auto allocResult = self->tryAllocateChunk(payload_size,
-                                                          iox::CHUNK_DEFAULT_PAYLOAD_ALIGNMENT,
-                                                          iox::CHUNK_NO_CUSTOM_HEADER_SIZE,
-                                                          iox::CHUNK_NO_CUSTOM_HEADER_ALIGNMENT);
+                                                          iox::CHUNK_DEFAULT_USER_PAYLOAD_ALIGNMENT,
+                                                          iox::CHUNK_NO_USER_HEADER_SIZE,
+                                                          iox::CHUNK_NO_USER_HEADER_ALIGNMENT);
                 if (allocResult.has_error()) {
                     return nullptr;
                 } else {
-                    return allocResult.value()->payload();
+                    return allocResult.value()->userPayload();
                 }
             });
 
@@ -130,7 +130,7 @@ impl Publisher {
         unsafe {
             let chunk = Box::into_raw(chunk);
             cpp!([self as "PublisherPortUser*", chunk as "void*"] {
-                auto header = iox::mepoo::ChunkHeader::fromPayload(chunk);
+                auto header = iox::mepoo::ChunkHeader::fromUserPayload(chunk);
                 self->releaseChunk(header);
             });
         }
@@ -140,7 +140,7 @@ impl Publisher {
         unsafe {
             let chunk = Box::into_raw(chunk);
             cpp!([self as "PublisherPortUser*", chunk as "void*"] {
-                auto header = iox::mepoo::ChunkHeader::fromPayload(chunk);
+                auto header = iox::mepoo::ChunkHeader::fromUserPayload(chunk);
                 self->sendChunk(header);
             });
         }

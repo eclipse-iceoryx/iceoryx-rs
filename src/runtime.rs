@@ -9,7 +9,7 @@ use std::ffi::CString;
 cpp! {{
     #include "iceoryx_posh/runtime/posh_runtime.hpp"
 
-    using iox::ProcessName_t;
+    using iox::RuntimeName_t;
     using iox::cxx::TruncateToCapacity;
     using iox::runtime::PoshRuntime;
 }}
@@ -22,7 +22,7 @@ impl Runtime {
         let app_name = app_name.as_ptr();
         unsafe {
             cpp!([app_name as "const char *"] {
-                PoshRuntime::initRuntime(ProcessName_t(TruncateToCapacity, app_name));
+                PoshRuntime::initRuntime(RuntimeName_t(TruncateToCapacity, app_name));
             });
         }
     }

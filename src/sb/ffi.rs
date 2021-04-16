@@ -225,7 +225,7 @@ impl Subscriber {
                     return nullptr;
                 }
 
-                return getChunkResult.value()->payload();
+                return getChunkResult.value()->userPayload();
             });
 
             if !chunk.is_null() {
@@ -241,7 +241,7 @@ impl Subscriber {
             let chunk = Box::into_raw(chunk);
             let mut chunk = &*chunk;
             cpp!([self as "SubscriberPortUser*", mut chunk as "void*"] {
-                auto header = iox::mepoo::ChunkHeader::fromPayload(chunk);
+                auto header = iox::mepoo::ChunkHeader::fromUserPayload(chunk);
                 self->releaseChunk(header);
             });
         }

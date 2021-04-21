@@ -29,6 +29,7 @@ fn make_and_install(
             .current_dir(&component_build_dir)
             .args(&[
                 "-DCMAKE_BUILD_TYPE=Release",
+                "-DBUILD_SHARED_LIBS=OFF",
                 &cmake_install_prefix,
                 &component_source_dir,
             ])

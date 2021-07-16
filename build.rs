@@ -82,7 +82,10 @@ fn main() -> std::io::Result<()> {
     println!("cargo:rustc-link-lib=iceoryx_posh");
     println!("cargo:rustc-link-lib=iceoryx_utils");
     println!("cargo:rustc-link-lib=iceoryx_platform");
+    #[cfg(not(target_os = "macos"))]
     println!("cargo:rustc-link-lib=stdc++");
+    #[cfg(target_os = "macos")]
+    println!("cargo:rustc-link-lib=c++");
 
     Ok(())
 }

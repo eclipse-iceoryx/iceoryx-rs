@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
+#![recursion_limit="256"]
+
 #[macro_use]
 extern crate cpp;
 

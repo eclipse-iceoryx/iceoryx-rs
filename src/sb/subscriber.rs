@@ -25,17 +25,14 @@ impl<T, S: SubscriberStrongRef> Subscriber<T, S> {
     }
 
     pub fn get_sample_receiver(&self, _: SampleReceiverToken) -> SampleReceiver<T, S> {
-        self.ffi_sub.as_ref().enable_wait_for_chunks();
         SampleReceiver::<T, S>::new(self.ffi_sub.clone())
     }
 
-    // TODO once ffi::Subscriber::disable_wait_for_chunks() is available, enable this
-    // pub fn stop_sample_receiver(&self) {
-    //     self.ffi_sub.disable_wait_for_chunks();
-    // }
+    pub fn stop_sample_receiver(&self) {
+        self.ffi_sub.as_ref().unset_condition_variable();
+    }
 
     pub fn unsubscribe(self, sample_receiver: SampleReceiver<T, S>) -> Topic<T> {
-        // TODO once ffi::Subscriber::disable_wait_for_chunks() is available, call it here
         self.ffi_sub.as_ref().unsubscribe();
 
         drop(sample_receiver);

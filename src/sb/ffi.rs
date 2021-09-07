@@ -69,6 +69,7 @@ impl SubscriberStrongRef for SubscriberArc {
 
 cpp! {{
     #include "iceoryx_posh/internal/popo/ports/subscriber_port_user.hpp"
+    #include "iceoryx_posh/internal/popo/building_blocks/condition_variable_data.hpp"
     #include "iceoryx_posh/runtime/posh_runtime.hpp"
 
     using iox::SubscribeState;
@@ -77,9 +78,39 @@ cpp! {{
     using iox::popo::SubscriberOptions;
     using iox::popo::SubscriberPortUser;
     using iox::runtime::PoshRuntime;
+
+    class ConditionVariable {
+      public:
+        ConditionVariable()
+          : m_data(*PoshRuntime::getInstance().getMiddlewareConditionVariable())
+        {}
+
+        ~ConditionVariable() {
+            m_data.m_toBeDestroyed.store(true, std::memory_order_relaxed);
+            m_data.m_semaphore.post().or_else([](auto) {
+                iox::LogFatal() << "Could not get ConditionVariableData from RouDi! Terminating!";
+                std::terminate();
+            });
+        }
+
+        void timedWait(const iox::units::Duration& timeToWait) {
+            m_data.m_semaphore.timedWait(timeToWait, false).or_else([](auto) {
+                iox::LogFatal() << "Could wait on semaphore! Potentially corrupted! Terminating!";
+                std::terminate();
+            }).value();
+        }
+
+        iox::popo::ConditionVariableData& data() {
+            return m_data;
+        }
+
+      private:
+        iox::popo::ConditionVariableData& m_data;
+    };
 }}
 
 cpp_class!(pub unsafe struct Subscriber as "SubscriberPortUser");
+cpp_class!(pub unsafe struct ConditionVariable as "ConditionVariable");
 
 impl Subscriber {
     pub(super) fn new(
@@ -153,45 +184,32 @@ impl Subscriber {
         }
     }
 
-    pub fn enable_wait_for_chunks(&self) {
-        // TODO adjust to new iceoryx API
-        // unsafe {
-        //     cpp!([self as "SubscriberPortUser*"] {
-        //         if(!self->isChunkReceiveSemaphoreSet()) {
-        //             self->setChunkReceiveSemaphore(self->getSemaphore());
-        //         }
-        //     });
-        // }
+    pub fn set_condition_variable(&self, condition_variable: &ConditionVariable) {
+        unsafe {
+            cpp!([self as "SubscriberPortUser*", condition_variable as "ConditionVariable*"] {
+                if(!self->isConditionVariableSet()) {
+                    // currently the condition variable is used only for one subscriber and therefore the index is set to 0
+                    constexpr uint64_t NOTIFICATION_INDEX{0};
+                    self->setConditionVariable(condition_variable->data(), NOTIFICATION_INDEX);
+                }
+            });
+        }
     }
 
-    pub fn wait_for_chunks_enabled(&self) -> bool {
-        // TODO adjust to new iceoryx API
-        // unsafe {
-        //     cpp!([self as "SubscriberPortUser*"] -> bool as "bool"{
-        //         return self->isChunkReceiveSemaphoreSet();
-        //     })
-        // }
-        false
+    pub fn unset_condition_variable(&self) {
+        unsafe {
+            cpp!([self as "SubscriberPortUser*"] {
+                self->unsetConditionVariable();
+            });
+        }
     }
 
-    // TODO additional API in iceoryx needed
-    // pub fn disable_wait_for_chunks(&self) {
-    //     unsafe {
-    //         cpp!([self as "Subscriber*"] {
-    //             self->unsetChunkReceiveSemaphore();
-    //         });
-    //     }
-    // }
-
-    pub fn wait_for_chunks(&self, timeout: Duration) -> bool {
-        // TODO adjust to new iceoryx API
-        // let timeout = timeout.as_millis() as u32;
-        // unsafe {
-        //     cpp!([self as "SubscriberPortUser*", timeout as "uint32_t"] -> bool as "bool" {
-        //         return self->waitForChunk(timeout);
-        //     })
-        // }
-        false
+    pub fn is_condition_variable_set(&self) -> bool {
+        unsafe {
+            cpp!([self as "SubscriberPortUser*"] -> bool as "bool"{
+                return self->isConditionVariableSet();
+            })
+        }
     }
 
     pub fn has_chunks(&self) -> bool {
@@ -247,5 +265,27 @@ impl Subscriber {
 impl fmt::Debug for Subscriber {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:#?}", self)
+    }
+}
+
+impl ConditionVariable {
+    pub(super) fn new() -> Box<Self> {
+        unsafe {
+            let raw = cpp!([] -> *mut ConditionVariable as "ConditionVariable*"
+            {
+                return new ConditionVariable;
+            });
+
+            Box::from_raw(raw)
+        }
+    }
+
+    pub(super) fn timed_wait(&self, timeout: Duration) {
+        unsafe {
+            let timeout_ns = timeout.as_nanos() as u64;
+            cpp!([self as "ConditionVariable*", timeout_ns as "uint64_t"] {
+                self->timedWait(iox::units::Duration::fromNanoseconds(timeout_ns));
+            });
+        }
     }
 }

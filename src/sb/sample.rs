@@ -31,13 +31,18 @@ impl<T, S: ffi::SubscriberStrongRef> Drop for Sample<T, S> {
 
 pub struct SampleReceiver<T, S: ffi::SubscriberStrongRef> {
     ffi_sub: S,
+    pub condition_variable: Box<ffi::ConditionVariable>,
     phantom: PhantomData<T>,
 }
 
 impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
     pub(super) fn new(ffi_sub: S) -> Self {
+        let condition_variable = ffi::ConditionVariable::new();
+        ffi_sub.as_ref().set_condition_variable(&condition_variable);
+
         SampleReceiver {
             ffi_sub,
+            condition_variable,
             phantom: PhantomData,
         }
     }
@@ -47,7 +52,7 @@ impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
     }
 
     pub fn wait_for_samples(&self, timeout: Duration) -> SampleReceiverWaitState {
-        if !self.ffi_sub.as_ref().wait_for_chunks_enabled() {
+        if !self.ffi_sub.as_ref().is_condition_variable_set() {
             return SampleReceiverWaitState::Stopped;
         }
         if self.has_samples() {
@@ -59,13 +64,13 @@ impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
             let elapsed = entry_time.elapsed().unwrap_or(timeout);
             timeout.checked_sub(elapsed)
         } {
-            self.ffi_sub.as_ref().wait_for_chunks(remaining_timeout);
+            self.condition_variable.timed_wait(remaining_timeout);
             if self.has_samples() {
                 return SampleReceiverWaitState::SamplesAvailable;
             }
         }
 
-        if self.ffi_sub.as_ref().wait_for_chunks_enabled() {
+        if self.ffi_sub.as_ref().is_condition_variable_set() {
             SampleReceiverWaitState::Timeout
         } else {
             SampleReceiverWaitState::Stopped
@@ -93,6 +98,7 @@ impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
 
 impl<T, S: super::ffi::SubscriberStrongRef> Drop for SampleReceiver<T, S> {
     fn drop(&mut self) {
+        self.ffi_sub.as_ref().unset_condition_variable();
         self.ffi_sub.as_ref().unsubscribe();
     }
 }

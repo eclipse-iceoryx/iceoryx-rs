@@ -3,13 +3,10 @@
 use cpp_build;
 
 use std::env;
+use std::path::Path;
 use std::process::Command;
 
-fn make_and_install(
-    source_dir: &str,
-    build_dir: &str,
-    install_dir: &str,
-) -> std::io::Result<()> {
+fn make_and_install(source_dir: &str, build_dir: &str, install_dir: &str) -> std::io::Result<()> {
     let cmake_install_prefix = format!("-DCMAKE_INSTALL_PREFIX={}", install_dir);
 
     for iceoryx_component in &["iceoryx_utils", "iceoryx_posh"] {
@@ -54,13 +51,50 @@ fn make_and_install(
     Ok(())
 }
 
+fn clone_repo(repo: &str, branch: &str, source_dir: &str) -> std::io::Result<()> {
+    if !Path::new(source_dir).join(".git").exists() {
+        Command::new("git")
+            .args(&[
+                "clone",
+                repo,
+                &format!("--branch={}", branch),
+                "--recursive",
+                source_dir,
+            ])
+            .output()
+            .map_err(|out| {
+                println!("{:?}", out);
+                out
+            })
+            .map(|out| println!("{:?}", out))?;
+    } else {
+        Command::new("git")
+            .current_dir(source_dir)
+            .args(&["checkout", branch])
+            .output()
+            .map_err(|out| {
+                println!("{:?}", out);
+                out
+            })
+            .map(|out| println!("{:?}", out))?;
+    }
+
+    Ok(())
+}
+
 fn main() -> std::io::Result<()> {
     let current_dir = env::current_dir()?;
     let current_dir = current_dir.to_str().expect("Valid dir");
 
-    let iceoryx_source_dir = format!("{}/{}", current_dir, "iceoryx");
+    let iceoryx_source_dir = format!("{}/{}/{}", current_dir, "target", "iceoryx-git");
     let iceoryx_build_dir = format!("{}/{}/{}", current_dir, "target", "iceoryx-build");
     let iceoryx_install_dir = format!("{}/{}/{}", current_dir, "target", "iceoryx-install");
+
+    clone_repo(
+        "https://github.com/eclipse-iceoryx/iceoryx.git",
+        "v1.0.1",
+        &iceoryx_source_dir,
+    )?;
 
     make_and_install(
         &iceoryx_source_dir,

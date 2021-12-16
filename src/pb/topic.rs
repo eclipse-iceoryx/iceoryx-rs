@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
+// SPDX-FileContributor: Mathias Kraus
 
 use super::{ffi::Publisher as FfiPublisher, Publisher, PublisherOptions, POD};
 use crate::IceOryxError;

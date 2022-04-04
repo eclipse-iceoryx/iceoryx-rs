@@ -96,8 +96,8 @@ cpp! {{
         }
 
         void timedWait(const iox::units::Duration& timeToWait) {
-            m_data.m_semaphore.timedWait(timeToWait, false).or_else([](auto) {
-                iox::LogFatal() << "Could wait on semaphore! Potentially corrupted! Terminating!";
+            m_data.m_semaphore.timedWait(timeToWait).or_else([](auto) {
+                iox::LogFatal() << "Could not wait on semaphore! Potentially corrupted! Terminating!";
                 std::terminate();
             }).value();
         }

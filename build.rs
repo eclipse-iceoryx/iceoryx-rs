@@ -11,7 +11,7 @@ use std::process::Command;
 fn make_and_install(source_dir: &str, build_dir: &str, install_dir: &str) -> std::io::Result<()> {
     let cmake_install_prefix = format!("-DCMAKE_INSTALL_PREFIX={}", install_dir);
 
-    for iceoryx_component in &["iceoryx_utils", "iceoryx_posh"] {
+    for iceoryx_component in &["iceoryx_hoofs", "iceoryx_posh"] {
         let component_source_dir = format!("{}/{}", source_dir, iceoryx_component);
         let component_build_dir = format!("{}/{}", build_dir, iceoryx_component);
 
@@ -92,9 +92,11 @@ fn main() -> std::io::Result<()> {
     let iceoryx_build_dir = format!("{}/{}/{}", current_dir, "target", "iceoryx-build");
     let iceoryx_install_dir = format!("{}/{}/{}", current_dir, "target", "iceoryx-install");
 
+    const ICEORYX_VERSION: &str = "v2.0.1";
+    const ICEORYX_GIT_BRANCH: &str = ICEORYX_VERSION;
     clone_repo(
         "https://github.com/eclipse-iceoryx/iceoryx.git",
-        "v1.0.1",
+        ICEORYX_GIT_BRANCH,
         &iceoryx_source_dir,
     )?;
 
@@ -104,7 +106,7 @@ fn main() -> std::io::Result<()> {
         &iceoryx_install_dir,
     )?;
 
-    let iceoryx_include_dir = format!("{}/{}", iceoryx_install_dir, "include");
+    let iceoryx_include_dir = format!("{}/{}/iceoryx/{}", iceoryx_install_dir, "include", ICEORYX_VERSION);
     let iceoryx_lib_dir = format!("{}/{}", iceoryx_install_dir, "lib");
     cpp_build::Config::new()
         .include(iceoryx_include_dir)
@@ -116,7 +118,7 @@ fn main() -> std::io::Result<()> {
 
     println!("cargo:rustc-link-lib=iceoryx_posh_roudi");
     println!("cargo:rustc-link-lib=iceoryx_posh");
-    println!("cargo:rustc-link-lib=iceoryx_utils");
+    println!("cargo:rustc-link-lib=iceoryx_hoofs");
     println!("cargo:rustc-link-lib=iceoryx_platform");
     #[cfg(not(target_os = "macos"))]
     println!("cargo:rustc-link-lib=stdc++");

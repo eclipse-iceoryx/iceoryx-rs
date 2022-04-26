@@ -1,0 +1,35 @@
+name: Rust Build & Test (Ubuntu, macOS, Windows)
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+        rust: [stable, nightly]
+
+    steps:
+    - uses: hecrj/setup-rust-action@v1
+      with:
+        rust-version: ${{ matrix.rust }}
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - if: startsWith(matrix.os, 'ubuntu-latest') == true
+      name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y libacl1-dev libncurses5-dev
+    - name: Build
+      run: cargo build --all --examples
+    - name: Run tests
+      run: cargo test

@@ -17,7 +17,13 @@ pub struct TopicBuilder<'a, T> {
 
 impl<'a, T> TopicBuilder<'a, T> {
     pub fn new(service: &'a str, instance: &'a str, event: &'a str) -> Self {
-        Self {service, instance, event, options: SubscriberOptions::default(), phantom: PhantomData}
+        Self {
+            service,
+            instance,
+            event,
+            options: SubscriberOptions::default(),
+            phantom: PhantomData,
+        }
     }
 
     pub fn queue_capacity(mut self, queue_capacity: u64) -> Self {
@@ -40,7 +46,7 @@ impl<'a, T> TopicBuilder<'a, T> {
         self
     }
 
-    pub fn build(self) ->  Topic<T> {
+    pub fn build(self) -> Topic<T> {
         Topic {
             ffi_sub: ffi::Subscriber::new(self.service, self.instance, self.event, &self.options),
             phantom: PhantomData,

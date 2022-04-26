@@ -30,7 +30,7 @@ impl<T: POD> Publisher<T> {
     pub fn allocate_sample(&self) -> Result<SampleMut<T>, IceOryxError> {
         Ok(SampleMut {
             data: Some(self.publisher.ffi_pub.allocate_chunk()?),
-            service: &self,
+            service: self,
         })
     }
 

@@ -4,8 +4,7 @@
 
 use std::marker::PhantomData;
 
-pub(super) struct PublisherOptions
-{
+pub(super) struct PublisherOptions {
     pub history_capacity: u64,
     pub node_name: String,
     pub offer_on_create: bool,
@@ -14,6 +13,11 @@ pub(super) struct PublisherOptions
 
 impl Default for PublisherOptions {
     fn default() -> Self {
-        Self {history_capacity: 0, node_name: String::new(), offer_on_create: true, _phantom: PhantomData}
+        Self {
+            history_capacity: 0,
+            node_name: String::new(),
+            offer_on_create: true,
+            _phantom: PhantomData,
+        }
     }
 }

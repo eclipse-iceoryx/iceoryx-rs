@@ -17,7 +17,13 @@ pub struct TopicBuilder<'a, T: POD> {
 
 impl<'a, T: POD> TopicBuilder<'a, T> {
     pub fn new(service: &'a str, instance: &'a str, event: &'a str) -> Self {
-        Self {service, instance, event, options: PublisherOptions::default(), phantom: PhantomData}
+        Self {
+            service,
+            instance,
+            event,
+            options: PublisherOptions::default(),
+            phantom: PhantomData,
+        }
     }
 
     pub fn history_capacity(mut self, history_capacity: u64) -> Self {
@@ -35,7 +41,7 @@ impl<'a, T: POD> TopicBuilder<'a, T> {
         self
     }
 
-    pub fn build(self) ->  Result<Topic<T>, IceOryxError> {
+    pub fn build(self) -> Result<Topic<T>, IceOryxError> {
         let ffi_pub = FfiPublisher::new(self.service, self.instance, self.event, &self.options);
 
         Ok(Topic {

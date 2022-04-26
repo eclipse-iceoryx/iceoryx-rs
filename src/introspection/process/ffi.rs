@@ -25,7 +25,7 @@ pub struct ProcessIntrospectionData {
 
 impl ProcessIntrospectionData {
     pub fn pid(&self) -> i32 {
-        return self.pid;
+        self.pid
     }
 
     pub fn name(&self) -> Option<String> {

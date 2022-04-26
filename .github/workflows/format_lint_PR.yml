@@ -8,7 +8,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  code-format-check:
+  code-lint-format-check:
     runs-on: ubuntu-latest
     steps:
       - name : Checkout
@@ -18,8 +18,12 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
             toolchain: stable
-            components: rustfmt clippy
+            components: rustfmt, clippy
             override: true
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y libacl1-dev libncurses5-dev
       - name: Check Formatting
         run: |
           cargo clippy

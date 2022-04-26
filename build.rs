@@ -2,8 +2,6 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-use cpp_build;
-
 use std::env;
 use std::path::Path;
 use std::process::Command;
@@ -106,12 +104,29 @@ fn main() -> std::io::Result<()> {
         &iceoryx_install_dir,
     )?;
 
-    let iceoryx_include_dir = format!("{}/{}/iceoryx/{}", iceoryx_install_dir, "include", ICEORYX_VERSION);
+    let iceoryx_include_dir = format!(
+        "{}/{}/iceoryx/{}",
+        iceoryx_install_dir, "include", ICEORYX_VERSION
+    );
     let iceoryx_lib_dir = format!("{}/{}", iceoryx_install_dir, "lib");
+
+    #[cfg(not(target_os = "windows"))]
     cpp_build::Config::new()
         .include(iceoryx_include_dir)
         .flag("-Wno-noexcept-type")
         .flag("-std=c++14")
+        .build("src/lib.rs");
+
+    #[cfg(target_os = "windows")]
+    cpp_build::Config::new()
+        .include(iceoryx_include_dir)
+        .flag("-std=c++17")
+        .build("src/lib.rs");
+
+    #[cfg(target_os = "macos")]
+    cpp_build::Config::new()
+        .include(iceoryx_include_dir)
+        .flag("-std=c++17")
         .build("src/lib.rs");
 
     println!("cargo:rustc-link-search={}", iceoryx_lib_dir);

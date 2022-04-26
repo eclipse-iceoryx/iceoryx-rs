@@ -2,8 +2,8 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-use crate::IceOryxError;
 use crate::pb::PublisherOptions;
+use crate::IceOryxError;
 
 use std::ffi::CString;
 

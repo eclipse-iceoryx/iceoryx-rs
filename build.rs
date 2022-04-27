@@ -110,23 +110,18 @@ fn main() -> std::io::Result<()> {
     );
     let iceoryx_lib_dir = format!("{}/{}", iceoryx_install_dir, "lib");
 
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(not(any(target_os = "windows")))]
     cpp_build::Config::new()
         .include(iceoryx_include_dir)
         .flag("-Wno-noexcept-type")
-        .flag("-std=c++14")
+        .flag("-std=c++17")
         .build("src/lib.rs");
 
     #[cfg(target_os = "windows")]
     cpp_build::Config::new()
         .include(iceoryx_include_dir)
-        .flag("-std=c++17")
-        .build("src/lib.rs");
-
-    #[cfg(target_os = "macos")]
-    cpp_build::Config::new()
-        .include(iceoryx_include_dir)
-        .flag("-std=c++17")
+        .flag("/std:c++17")
+        .flag("/MD")
         .build("src/lib.rs");
 
     println!("cargo:rustc-link-search={}", iceoryx_lib_dir);
@@ -135,9 +130,9 @@ fn main() -> std::io::Result<()> {
     println!("cargo:rustc-link-lib=iceoryx_posh");
     println!("cargo:rustc-link-lib=iceoryx_hoofs");
     println!("cargo:rustc-link-lib=iceoryx_platform");
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
     println!("cargo:rustc-link-lib=stdc++");
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos"))]
     println!("cargo:rustc-link-lib=c++");
 
     Ok(())

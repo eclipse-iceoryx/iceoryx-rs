@@ -14,7 +14,7 @@ struct CounterTopic {
     counter: u32,
 }
 
-unsafe impl POD for CounterTopic {}
+impl POD for CounterTopic {}
 
 fn main() -> Result<(), Box<dyn Error>> {
     Runtime::init("publisher_simple");

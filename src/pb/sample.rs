@@ -6,20 +6,20 @@ use super::Publisher;
 
 use std::ops::{Deref, DerefMut};
 
-pub unsafe trait POD {}
+pub trait POD {}
 // TODO more impls
-unsafe impl POD for i8 {}
-unsafe impl POD for u8 {}
-unsafe impl POD for i16 {}
-unsafe impl POD for u16 {}
-unsafe impl POD for i32 {}
-unsafe impl POD for u32 {}
-unsafe impl POD for i64 {}
-unsafe impl POD for u64 {}
-unsafe impl POD for f32 {}
-unsafe impl POD for f64 {}
-unsafe impl POD for isize {}
-unsafe impl POD for usize {}
+impl POD for i8 {}
+impl POD for u8 {}
+impl POD for i16 {}
+impl POD for u16 {}
+impl POD for i32 {}
+impl POD for u32 {}
+impl POD for i64 {}
+impl POD for u64 {}
+impl POD for f32 {}
+impl POD for f64 {}
+impl POD for isize {}
+impl POD for usize {}
 
 pub struct SampleMut<'a, T: POD> {
     pub(super) data: Option<Box<T>>,

@@ -266,7 +266,7 @@ impl Subscriber {
 
 impl fmt::Debug for Subscriber {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:#?}", self)
+        f.debug_struct("Subscriber").field("_opaque", &self._opaque).finish()
     }
 }
 

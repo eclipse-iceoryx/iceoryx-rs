@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
+// SPDX-FileContributor: Apex.AI
 
 use crate::sb::SubscriberOptions;
 
@@ -266,7 +267,7 @@ impl Subscriber {
 
 impl fmt::Debug for Subscriber {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:#?}", self)
+        write!(f, "{:#?}", self._opaque)
     }
 }
 

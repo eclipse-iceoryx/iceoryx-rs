@@ -7,46 +7,24 @@ use std::path::Path;
 use std::process::Command;
 
 fn make_and_install(source_dir: &str, build_dir: &str, install_dir: &str) -> std::io::Result<()> {
-    let cmake_install_prefix = format!("-DCMAKE_INSTALL_PREFIX={}", install_dir);
+    Command::new("cmake")
+        .current_dir(source_dir)
+        .arg(format!("-B{}", build_dir))
+        .arg("-Hiceoryx_meta")
+        .arg("-DCMAKE_BUILD_TYPE=Release")
+        .arg("-DBUILD_SHARED_LIBS=OFF")
+        .arg(format!("-DCMAKE_INSTALL_PREFIX={}", install_dir))
+        .output()?;
 
-    for iceoryx_component in &["iceoryx_hoofs", "iceoryx_posh"] {
-        let component_source_dir = format!("{}/{}", source_dir, iceoryx_component);
-        let component_build_dir = format!("{}/{}", build_dir, iceoryx_component);
-
-        Command::new("mkdir")
-            .args(&["-p", &component_build_dir])
-            .output()
-            .map_err(|out| {
-                println!("{:?}", out);
-                out
-            })
-            .map(|out| println!("{:?}", out))?;
-
-        Command::new("cmake")
-            .current_dir(&component_build_dir)
-            .args(&[
-                "-DCMAKE_BUILD_TYPE=Release",
-                "-DBUILD_SHARED_LIBS=OFF",
-                &cmake_install_prefix,
-                &component_source_dir,
-            ])
-            .output()
-            .map_err(|out| {
-                println!("{:?}", out);
-                out
-            })
-            .map(|out| println!("{:?}", out))?;
-
-        Command::new("cmake")
-            .current_dir(&component_build_dir)
-            .args(&["--build", ".", "--target", "install"])
-            .output()
-            .map_err(|out| {
-                println!("{:?}", out);
-                out
-            })
-            .map(|out| println!("{:?}", out))?;
-    }
+    Command::new("cmake")
+        .current_dir(build_dir)
+        .args(&["--build", ".", "--target", "install"])
+        .output()
+        .map_err(|out| {
+            println!("{:?}", out);
+            out
+        })
+        .map(|out| println!("{:?}", out))?;
 
     Ok(())
 }
@@ -90,7 +68,7 @@ fn main() -> std::io::Result<()> {
     let iceoryx_build_dir = format!("{}/{}/{}", current_dir, "target", "iceoryx-build");
     let iceoryx_install_dir = format!("{}/{}/{}", current_dir, "target", "iceoryx-install");
 
-    const ICEORYX_VERSION: &str = "v2.0.1";
+    const ICEORYX_VERSION: &str = "v2.0.2";
     const ICEORYX_GIT_BRANCH: &str = ICEORYX_VERSION;
     clone_repo(
         "https://github.com/eclipse-iceoryx/iceoryx.git",

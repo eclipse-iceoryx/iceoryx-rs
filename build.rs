@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
+// SPDX-FileContributor: Apex.AI
 
 use std::env;
+use std::io::{Error, ErrorKind};
 use std::path::Path;
 use std::process::Command;
 
@@ -13,16 +15,18 @@ fn make_and_install(source_dir: &str, build_dir: &str, install_dir: &str) -> std
         let component_source_dir = format!("{}/{}", source_dir, iceoryx_component);
         let component_build_dir = format!("{}/{}", build_dir, iceoryx_component);
 
-        Command::new("mkdir")
+        if !Command::new("mkdir")
             .args(&["-p", &component_build_dir])
-            .output()
-            .map_err(|out| {
-                println!("{:?}", out);
-                out
-            })
-            .map(|out| println!("{:?}", out))?;
+            .status()?
+            .success()
+        {
+            return Err(Error::new(
+                ErrorKind::Other,
+                format!("Could not create build dir for '{}'!", iceoryx_component),
+            ));
+        }
 
-        Command::new("cmake")
+        if !Command::new("cmake")
             .current_dir(&component_build_dir)
             .args(&[
                 "-DCMAKE_BUILD_TYPE=Release",
@@ -30,22 +34,26 @@ fn make_and_install(source_dir: &str, build_dir: &str, install_dir: &str) -> std
                 &cmake_install_prefix,
                 &component_source_dir,
             ])
-            .output()
-            .map_err(|out| {
-                println!("{:?}", out);
-                out
-            })
-            .map(|out| println!("{:?}", out))?;
+            .status()?
+            .success()
+        {
+            return Err(Error::new(
+                ErrorKind::Other,
+                format!("Could not run cmake for '{}'!", iceoryx_component),
+            ));
+        }
 
-        Command::new("cmake")
+        if !Command::new("cmake")
             .current_dir(&component_build_dir)
             .args(&["--build", ".", "--target", "install"])
-            .output()
-            .map_err(|out| {
-                println!("{:?}", out);
-                out
-            })
-            .map(|out| println!("{:?}", out))?;
+            .status()?
+            .success()
+        {
+            return Err(Error::new(
+                ErrorKind::Other,
+                format!("Could not build '{}'!", iceoryx_component),
+            ));
+        }
     }
 
     Ok(())
@@ -90,7 +98,7 @@ fn main() -> std::io::Result<()> {
     let iceoryx_build_dir = format!("{}/{}/{}", current_dir, "target", "iceoryx-build");
     let iceoryx_install_dir = format!("{}/{}/{}", current_dir, "target", "iceoryx-install");
 
-    const ICEORYX_VERSION: &str = "v2.0.1";
+    const ICEORYX_VERSION: &str = "v2.0.2";
     const ICEORYX_GIT_BRANCH: &str = ICEORYX_VERSION;
     clone_repo(
         "https://github.com/eclipse-iceoryx/iceoryx.git",

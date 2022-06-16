@@ -10,6 +10,7 @@ use std::process::Command;
 
 fn make_and_install(source_dir: &str, build_dir: &str, install_dir: &str) -> std::io::Result<()> {
     let cmake_install_prefix = format!("-DCMAKE_INSTALL_PREFIX={}", install_dir);
+    let cmake_prefix_path = format!("-DCMAKE_PREFIX_PATH={}", install_dir);
 
     for iceoryx_component in &["iceoryx_hoofs", "iceoryx_posh"] {
         let component_source_dir = format!("{}/{}", source_dir, iceoryx_component);
@@ -31,6 +32,7 @@ fn make_and_install(source_dir: &str, build_dir: &str, install_dir: &str) -> std
             .args(&[
                 "-DCMAKE_BUILD_TYPE=Release",
                 "-DBUILD_SHARED_LIBS=OFF",
+                &cmake_prefix_path,
                 &cmake_install_prefix,
                 &component_source_dir,
             ])

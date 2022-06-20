@@ -144,13 +144,13 @@ fn main() -> std::io::Result<()> {
     println!("cargo:rustc-link-lib=iceoryx_hoofs");
     println!("cargo:rustc-link-lib=iceoryx_platform");
 
+    #[cfg(target_os = "linux")]
     println!("cargo:rustc-link-lib=acl");
 
     #[cfg(not(any(target_os = "windows", target_os = "macos")))]
     println!("cargo:rustc-link-lib=stdc++");
     #[cfg(any(target_os = "macos"))]
     println!("cargo:rustc-link-lib=c++");
-
 
     Ok(())
 }

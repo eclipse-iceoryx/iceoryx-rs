@@ -32,6 +32,7 @@ fn basic_pub_sub() -> Result<()> {
 
     let publisher = topic.offer();
     let mut sample = publisher.allocate_sample()?;
+
     const SEND_COUNTER: u32 = 42;
     sample.counter = SEND_COUNTER;
     publisher.publish(sample);

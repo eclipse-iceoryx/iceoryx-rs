@@ -15,3 +15,6 @@ cpp_build = "0.5"
 [dependencies]
 cpp = "0.5"
 thiserror = "1.0"
+
+[dev-dependencies]
+anyhow = "1.0"

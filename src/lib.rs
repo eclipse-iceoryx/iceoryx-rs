@@ -9,6 +9,7 @@ extern crate cpp;
 
 mod error;
 mod runtime;
+mod testing;
 
 pub mod introspection;
 pub mod pb;

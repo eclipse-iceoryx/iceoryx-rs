@@ -32,6 +32,7 @@ fn make_and_install(source_dir: &str, build_dir: &str, install_dir: &str) -> std
             .args(&[
                 "-DCMAKE_BUILD_TYPE=Release",
                 "-DBUILD_SHARED_LIBS=OFF",
+                "-DROUDI_ENVIRONMENT=ON",
                 &cmake_prefix_path,
                 &cmake_install_prefix,
                 &component_source_dir,
@@ -136,14 +137,20 @@ fn main() -> std::io::Result<()> {
 
     println!("cargo:rustc-link-search={}", iceoryx_lib_dir);
 
+    println!("cargo:rustc-link-lib=iceoryx_posh_testing");
+
     println!("cargo:rustc-link-lib=iceoryx_posh_roudi");
     println!("cargo:rustc-link-lib=iceoryx_posh");
     println!("cargo:rustc-link-lib=iceoryx_hoofs");
     println!("cargo:rustc-link-lib=iceoryx_platform");
+
+    println!("cargo:rustc-link-lib=acl");
+
     #[cfg(not(any(target_os = "windows", target_os = "macos")))]
     println!("cargo:rustc-link-lib=stdc++");
     #[cfg(any(target_os = "macos"))]
     println!("cargo:rustc-link-lib=c++");
+
 
     Ok(())
 }

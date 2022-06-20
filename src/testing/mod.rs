@@ -5,4 +5,4 @@
 mod roudi_environment_ffi;
 
 // re-exports
-pub (crate) use roudi_environment_ffi::RouDiEnvironment;
+pub(crate) use roudi_environment_ffi::RouDiEnvironment;

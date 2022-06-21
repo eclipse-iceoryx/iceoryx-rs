@@ -1,7 +1,7 @@
 ## Pre-Review Checklist for the PR Author
 
 1. [ ] Code follows the Rust coding style and is formatted with `rustfmt`
-1. [ ] Branch follows the naming format (`iox-#123-this-is-a-branch`)
+1. [ ] Branch follows the naming format (`iox-123-this-is-a-branch`)
 1. [ ] Commits messages are according to this [guideline][commit-guidelines]
     - [ ] Commit messages have the issue ID (`iox-#42 commit text`)
     - [ ] Commit author matches [Eclipse Contributor Agreement][eca] (and ECA is signed)

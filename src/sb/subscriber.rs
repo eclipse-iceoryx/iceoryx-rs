@@ -7,6 +7,7 @@ use super::{
 };
 use super::{mt, st};
 use crate::IceoryxError;
+use crate::QueueFullPolicy;
 
 use std::marker::PhantomData;
 
@@ -41,6 +42,19 @@ impl<'a, T> SubscriberBuilder<'a, T> {
 
     pub fn node_name(mut self, node_name: String) -> Self {
         self.options.node_name = node_name;
+        self
+    }
+
+    pub fn queue_full_policy(mut self, queue_full_policy: QueueFullPolicy) -> Self {
+        self.options.queue_full_policy = queue_full_policy;
+        self
+    }
+
+    pub fn requires_publisher_history_support(
+        mut self,
+        requires_publisher_history_support: bool,
+    ) -> Self {
+        self.options.requires_publisher_history_support = requires_publisher_history_support;
         self
     }
 

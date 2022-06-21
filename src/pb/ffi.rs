@@ -13,6 +13,7 @@ cpp! {{
 
     using iox::capro::IdString_t;
     using iox::cxx::TruncateToCapacity;
+    using iox::popo::ConsumerTooSlowPolicy;
     using iox::popo::PublisherOptions;
     using iox::popo::PublisherPortUser;
     using iox::runtime::PoshRuntime;
@@ -37,19 +38,22 @@ impl Publisher {
         let node_name = CString::new(&options.node_name as &str).expect("CString::new failed");
         let node_name = node_name.as_ptr();
         let offer_on_create = options.offer_on_create;
+        let subscriber_too_slow_policy = options.subscriber_too_slow_policy as u8;
         unsafe {
             let raw = cpp!([service as "const char *",
                             instance as "const char *",
                             event as "const char *",
                             history_capacity as "uint64_t",
                             node_name as "const char *",
-                            offer_on_create as "bool"]
+                            offer_on_create as "bool",
+                            subscriber_too_slow_policy as "uint8_t"]
                             -> *mut Publisher as "PublisherPortUser*"
             {
                 PublisherOptions options;
                 options.historyCapacity = history_capacity;
                 options.nodeName = IdString_t(TruncateToCapacity, node_name);
                 options.offerOnCreate = offer_on_create;
+                options.subscriberTooSlowPolicy = static_cast<ConsumerTooSlowPolicy>(subscriber_too_slow_policy);
                 auto portData = PoshRuntime::getInstance().getMiddlewarePublisher(
                     {
                         IdString_t(TruncateToCapacity, service),

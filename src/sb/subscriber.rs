@@ -6,7 +6,7 @@ use super::{
     ffi, ffi::SubscriberStrongRef, sample::SampleReceiver, SubscribeState, SubscriberOptions,
 };
 use super::{mt, st};
-use crate::IceOryxError;
+use crate::IceoryxError;
 
 use std::marker::PhantomData;
 
@@ -44,10 +44,10 @@ impl<'a, T> SubscriberBuilder<'a, T> {
         self
     }
 
-    pub fn create(mut self) -> Result<(st::Subscriber<T>, SampleReceiverToken), IceOryxError> {
+    pub fn create(mut self) -> Result<(st::Subscriber<T>, SampleReceiverToken), IceoryxError> {
         self.options.subscribe_on_create = true;
         let ffi_sub = ffi::Subscriber::new(self.service, self.instance, self.event, &self.options)
-            .ok_or(IceOryxError::SubscriberCreationFailed)?;
+            .ok_or(IceoryxError::SubscriberCreationFailed)?;
 
         let subscriber = st::Subscriber {
             ffi_sub: ffi::SubscriberRc::new(ffi_sub),
@@ -57,10 +57,10 @@ impl<'a, T> SubscriberBuilder<'a, T> {
         Ok((subscriber, SampleReceiverToken {}))
     }
 
-    pub fn create_mt(mut self) -> Result<(mt::Subscriber<T>, SampleReceiverToken), IceOryxError> {
+    pub fn create_mt(mut self) -> Result<(mt::Subscriber<T>, SampleReceiverToken), IceoryxError> {
         self.options.subscribe_on_create = true;
         let ffi_sub = ffi::Subscriber::new(self.service, self.instance, self.event, &self.options)
-            .ok_or(IceOryxError::SubscriberCreationFailed)?;
+            .ok_or(IceoryxError::SubscriberCreationFailed)?;
 
         let subscriber = mt::Subscriber {
             ffi_sub: ffi::SubscriberArc::new(ffi_sub),
@@ -70,10 +70,10 @@ impl<'a, T> SubscriberBuilder<'a, T> {
         Ok((subscriber, SampleReceiverToken {}))
     }
 
-    pub fn create_without_subscribe(mut self) -> Result<InactiveSubscriber<T>, IceOryxError> {
+    pub fn create_without_subscribe(mut self) -> Result<InactiveSubscriber<T>, IceoryxError> {
         self.options.subscribe_on_create = false;
         let ffi_sub = ffi::Subscriber::new(self.service, self.instance, self.event, &self.options)
-            .ok_or(IceOryxError::SubscriberCreationFailed)?;
+            .ok_or(IceoryxError::SubscriberCreationFailed)?;
 
         Ok(InactiveSubscriber {
             ffi_sub,

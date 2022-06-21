@@ -5,7 +5,7 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum IceOryxError {
+pub enum IceoryxError {
     #[error("could not alloce a chunk")]
     ChunkAllocationFailed,
     #[error("could not create a publisher")]

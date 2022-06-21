@@ -3,7 +3,7 @@
 // SPDX-FileContributor: Mathias Kraus
 
 use super::{ffi::Publisher as FfiPublisher, sample::SampleMut, PublisherOptions, POD};
-use crate::IceOryxError;
+use crate::IceoryxError;
 
 use std::marker::PhantomData;
 
@@ -36,10 +36,10 @@ impl<'a, T: POD> PublisherBuilder<'a, T> {
         self
     }
 
-    pub fn create(mut self) -> Result<Publisher<T>, IceOryxError> {
+    pub fn create(mut self) -> Result<Publisher<T>, IceoryxError> {
         self.options.offer_on_create = true;
         let ffi_pub = FfiPublisher::new(self.service, self.instance, self.event, &self.options)
-            .ok_or(IceOryxError::PublisherCreationFailed)?;
+            .ok_or(IceoryxError::PublisherCreationFailed)?;
 
         Ok(Publisher {
             ffi_pub,
@@ -47,10 +47,10 @@ impl<'a, T: POD> PublisherBuilder<'a, T> {
         })
     }
 
-    pub fn create_without_offer(mut self) -> Result<InactivePublisher<T>, IceOryxError> {
+    pub fn create_without_offer(mut self) -> Result<InactivePublisher<T>, IceoryxError> {
         self.options.offer_on_create = false;
         let ffi_pub = FfiPublisher::new(self.service, self.instance, self.event, &self.options)
-            .ok_or(IceOryxError::PublisherCreationFailed)?;
+            .ok_or(IceoryxError::PublisherCreationFailed)?;
 
         Ok(InactivePublisher {
             ffi_pub,
@@ -104,7 +104,7 @@ impl<T: POD> Publisher<T> {
         self.ffi_pub.has_subscribers()
     }
 
-    pub fn allocate_sample(&self) -> Result<SampleMut<T>, IceOryxError> {
+    pub fn allocate_sample(&self) -> Result<SampleMut<T>, IceoryxError> {
         Ok(SampleMut {
             data: Some(self.ffi_pub.allocate_chunk()?),
             service: self,

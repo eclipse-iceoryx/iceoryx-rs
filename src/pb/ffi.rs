@@ -3,7 +3,7 @@
 // SPDX-FileContributor: Mathias Kraus
 
 use crate::pb::PublisherOptions;
-use crate::IceOryxError;
+use crate::IceoryxError;
 
 use std::ffi::CString;
 
@@ -101,7 +101,7 @@ impl Publisher {
         }
     }
 
-    pub fn allocate_chunk<T>(&self) -> Result<Box<T>, IceOryxError> {
+    pub fn allocate_chunk<T>(&self) -> Result<Box<T>, IceoryxError> {
         let payload_size = std::mem::size_of::<T>() as u32;
         unsafe {
             let chunk = cpp!([self as "PublisherPortUser*", payload_size as "uint32_t"] -> *mut std::ffi::c_void as "void*" {
@@ -119,7 +119,7 @@ impl Publisher {
             if !chunk.is_null() {
                 Ok(Box::from_raw(chunk as *mut T))
             } else {
-                Err(IceOryxError::ChunkAllocationFailed)
+                Err(IceoryxError::ChunkAllocationFailed)
             }
         }
     }

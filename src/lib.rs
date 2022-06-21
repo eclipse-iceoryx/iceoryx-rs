@@ -15,7 +15,7 @@ pub mod pb;
 pub mod sb;
 
 // re-export structs
-pub use error::IceOryxError;
+pub use error::IceoryxError;
 pub use runtime::Runtime;
 
 #[cfg(test)]

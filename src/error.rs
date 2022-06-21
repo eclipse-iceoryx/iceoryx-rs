@@ -10,6 +10,8 @@ pub enum IceOryxError {
     ChunkAllocationFailed,
     #[error("could not create a publisher")]
     PublisherCreationFailed,
+    #[error("could not create a subscriber")]
+    SubscriberCreationFailed,
     #[error("number of allowed chunks to hold is exhausted")]
     TooManyChunksHoldInParallel,
 }

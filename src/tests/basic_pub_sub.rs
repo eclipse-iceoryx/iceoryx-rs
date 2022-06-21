@@ -22,13 +22,13 @@ fn basic_pub_sub() -> Result<()> {
 
     Runtime::init("basic_pub_sub");
 
-    let topic = sb::TopicBuilder::<Counter>::new("Test", "BasicPubSub", "Counter")
-        .queue_capacity(5)
-        .build();
+    let (subscriber, sample_receive_token) =
+        sb::SubscriberBuilder::<Counter>::new("Test", "BasicPubSub", "Counter")
+            .queue_capacity(5)
+            .create()?;
 
-    let (subscriber, sample_receive_token) = topic.subscribe();
-
-    let publisher = pb::PublisherBuilder::<Counter>::new("Test", "BasicPubSub", "Counter").create()?;
+    let publisher =
+        pb::PublisherBuilder::<Counter>::new("Test", "BasicPubSub", "Counter").create()?;
 
     let mut sample = publisher.allocate_sample()?;
 

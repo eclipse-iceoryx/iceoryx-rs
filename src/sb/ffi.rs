@@ -121,7 +121,7 @@ impl Subscriber {
         instance: &str,
         event: &str,
         options: &SubscriberOptions,
-    ) -> Box<Self> {
+    ) -> Option<Box<Self>> {
         let service = CString::new(service).expect("CString::new failed");
         let service = service.as_ptr();
         let instance = CString::new(instance).expect("CString::new failed");
@@ -159,7 +159,11 @@ impl Subscriber {
                 return new SubscriberPortUser(portData);
             });
 
-            Box::from_raw(raw)
+            if raw.is_null() {
+                None
+            } else {
+                Some(Box::from_raw(raw))
+            }
         }
     }
 

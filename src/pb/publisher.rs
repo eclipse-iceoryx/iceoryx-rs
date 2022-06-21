@@ -3,6 +3,7 @@
 // SPDX-FileContributor: Mathias Kraus
 
 use super::{ffi::Publisher as FfiPublisher, sample::SampleMut, PublisherOptions, POD};
+use crate::ConsumerTooSlowPolicy;
 use crate::IceoryxError;
 
 use std::marker::PhantomData;
@@ -33,6 +34,14 @@ impl<'a, T: POD> PublisherBuilder<'a, T> {
 
     pub fn node_name(mut self, node_name: String) -> Self {
         self.options.node_name = node_name;
+        self
+    }
+
+    pub fn subscriber_too_slow_policy(
+        mut self,
+        subscriber_too_slow_policy: ConsumerTooSlowPolicy,
+    ) -> Self {
+        self.options.subscriber_too_slow_policy = subscriber_too_slow_policy;
         self
     }
 

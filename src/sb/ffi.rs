@@ -78,6 +78,7 @@ cpp! {{
     using iox::SubscribeState;
     using iox::capro::IdString_t;
     using iox::cxx::TruncateToCapacity;
+    using iox::popo::QueueFullPolicy;
     using iox::popo::SubscriberOptions;
     using iox::popo::SubscriberPortUser;
     using iox::runtime::PoshRuntime;
@@ -133,6 +134,8 @@ impl Subscriber {
         let node_name = CString::new(&options.node_name as &str).expect("CString::new failed");
         let node_name = node_name.as_ptr();
         let subscribe_on_create = options.subscribe_on_create;
+        let queue_full_policy = options.queue_full_policy as u8;
+        let requires_publisher_history_support = options.requires_publisher_history_support;
         unsafe {
             let raw = cpp!([service as "const char *",
                             instance as "const char *",
@@ -140,7 +143,9 @@ impl Subscriber {
                             queue_capacity as "uint64_t",
                             history_request as "uint64_t",
                             node_name as "const char *",
-                            subscribe_on_create as "bool"]
+                            subscribe_on_create as "bool",
+                            queue_full_policy as "uint8_t",
+                            requires_publisher_history_support as "bool"]
                             -> *mut Subscriber as "SubscriberPortUser*"
             {
                 SubscriberOptions options;
@@ -148,6 +153,8 @@ impl Subscriber {
                 options.historyRequest = history_request;
                 options.nodeName = IdString_t(TruncateToCapacity, node_name);
                 options.subscribeOnCreate = subscribe_on_create;
+                options.queueFullPolicy = static_cast<QueueFullPolicy>(queue_full_policy);
+                options.requiresPublisherHistorySupport = requires_publisher_history_support;
                 auto portData = PoshRuntime::getInstance().getMiddlewareSubscriber(
                     {
                         IdString_t(TruncateToCapacity, service),

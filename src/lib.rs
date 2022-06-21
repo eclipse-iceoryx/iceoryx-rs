@@ -9,7 +9,6 @@ extern crate cpp;
 
 mod error;
 mod runtime;
-mod testing;
 
 pub mod introspection;
 pub mod pb;
@@ -19,5 +18,7 @@ pub mod sb;
 pub use error::IceOryxError;
 pub use runtime::Runtime;
 
+#[cfg(test)]
+mod testing;
 #[cfg(test)]
 mod tests;

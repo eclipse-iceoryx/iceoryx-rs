@@ -6,12 +6,11 @@ mod ffi;
 mod sample;
 mod subscriber;
 mod subscriber_options;
-mod topic;
 
 pub use ffi::SubscribeState;
 pub use sample::Sample;
 pub use sample::SampleReceiverWaitState;
-pub use topic::{Topic, TopicBuilder};
+pub use subscriber::{InactiveSubscriber, SubscriberBuilder};
 
 use subscriber_options::SubscriberOptions;
 

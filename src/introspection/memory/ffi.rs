@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-use crate::sb::{Topic, TopicBuilder};
+use crate::sb::{InactiveSubscriber, SubscriberBuilder};
 
 use std::ffi::CStr;
 use std::marker::PhantomData;
@@ -123,11 +123,12 @@ pub struct MemPoolIntrospectionTopic {
 }
 
 impl MemPoolIntrospectionTopic {
-    pub fn new() -> Topic<Self> {
-        TopicBuilder::<Self>::new("Introspection", "RouDi_ID", "MemPool")
+    pub fn new() -> InactiveSubscriber<Self> {
+        SubscriberBuilder::<Self>::new("Introspection", "RouDi_ID", "MemPool")
             .queue_capacity(1)
             .history_request(1)
-            .build()
+            .create_without_subscribe()
+            .expect("Create subscriber")
     }
 
     pub fn memory_segments(&self) -> MemorySegmentContainer {

@@ -3,11 +3,120 @@
 // SPDX-FileContributor: Mathias Kraus
 
 use super::{
-    ffi::SubscriberStrongRef, sample::SampleReceiver, topic::SampleReceiverToken, SubscribeState,
-    Topic,
+    ffi, ffi::SubscriberStrongRef, sample::SampleReceiver, SubscribeState, SubscriberOptions,
 };
+use super::{mt, st};
+use crate::IceOryxError;
 
 use std::marker::PhantomData;
+
+pub struct SubscriberBuilder<'a, T> {
+    service: &'a str,
+    instance: &'a str,
+    event: &'a str,
+    options: SubscriberOptions,
+    phantom: PhantomData<T>,
+}
+
+impl<'a, T> SubscriberBuilder<'a, T> {
+    pub fn new(service: &'a str, instance: &'a str, event: &'a str) -> Self {
+        Self {
+            service,
+            instance,
+            event,
+            options: SubscriberOptions::default(),
+            phantom: PhantomData,
+        }
+    }
+
+    pub fn queue_capacity(mut self, queue_capacity: u64) -> Self {
+        self.options.queue_capacity = queue_capacity;
+        self
+    }
+
+    pub fn history_request(mut self, history_request: u64) -> Self {
+        self.options.history_request = history_request;
+        self
+    }
+
+    pub fn node_name(mut self, node_name: String) -> Self {
+        self.options.node_name = node_name;
+        self
+    }
+
+    pub fn create(mut self) -> Result<(st::Subscriber<T>, SampleReceiverToken), IceOryxError> {
+        self.options.subscribe_on_create = true;
+        let ffi_sub = ffi::Subscriber::new(self.service, self.instance, self.event, &self.options)
+            .ok_or(IceOryxError::SubscriberCreationFailed)?;
+
+        let subscriber = st::Subscriber {
+            ffi_sub: ffi::SubscriberRc::new(ffi_sub),
+            phantom: PhantomData,
+        };
+
+        Ok((subscriber, SampleReceiverToken {}))
+    }
+
+    pub fn create_mt(mut self) -> Result<(mt::Subscriber<T>, SampleReceiverToken), IceOryxError> {
+        self.options.subscribe_on_create = true;
+        let ffi_sub = ffi::Subscriber::new(self.service, self.instance, self.event, &self.options)
+            .ok_or(IceOryxError::SubscriberCreationFailed)?;
+
+        let subscriber = mt::Subscriber {
+            ffi_sub: ffi::SubscriberArc::new(ffi_sub),
+            phantom: PhantomData,
+        };
+
+        Ok((subscriber, SampleReceiverToken {}))
+    }
+
+    pub fn create_without_subscribe(mut self) -> Result<InactiveSubscriber<T>, IceOryxError> {
+        self.options.subscribe_on_create = false;
+        let ffi_sub = ffi::Subscriber::new(self.service, self.instance, self.event, &self.options)
+            .ok_or(IceOryxError::SubscriberCreationFailed)?;
+
+        Ok(InactiveSubscriber {
+            ffi_sub,
+            phantom: PhantomData,
+        })
+    }
+}
+
+pub struct SampleReceiverToken {}
+
+pub struct InactiveSubscriber<T> {
+    ffi_sub: Box<ffi::Subscriber>,
+    phantom: PhantomData<T>,
+}
+
+impl<T> InactiveSubscriber<T> {
+    fn from_ffi(ffi_sub: Box<ffi::Subscriber>) -> Self {
+        Self {
+            ffi_sub,
+            phantom: PhantomData,
+        }
+    }
+
+    pub fn subscribe(self) -> (st::Subscriber<T>, SampleReceiverToken) {
+        self.ffi_sub.subscribe();
+        (
+            st::Subscriber::new_from_ffi(self.ffi_sub),
+            SampleReceiverToken {},
+        )
+    }
+
+    pub fn subscribe_mt(self) -> (mt::Subscriber<T>, SampleReceiverToken) {
+        self.ffi_sub.subscribe();
+        (
+            mt::Subscriber::new_from_ffi(self.ffi_sub),
+            SampleReceiverToken {},
+        )
+    }
+
+    pub fn subscription_state(&self) -> SubscribeState {
+        self.ffi_sub.subscription_state()
+    }
+}
 
 pub struct Subscriber<T, S: SubscriberStrongRef> {
     ffi_sub: S,
@@ -15,9 +124,9 @@ pub struct Subscriber<T, S: SubscriberStrongRef> {
 }
 
 impl<T, S: SubscriberStrongRef> Subscriber<T, S> {
-    pub(super) fn new(subscriber: Topic<T>) -> Self {
+    fn new_from_ffi(ffi_sub: Box<ffi::Subscriber>) -> Self {
         Subscriber {
-            ffi_sub: S::new(subscriber.ffi_sub),
+            ffi_sub: S::new(ffi_sub),
             phantom: PhantomData,
         }
     }
@@ -34,11 +143,11 @@ impl<T, S: SubscriberStrongRef> Subscriber<T, S> {
         self.ffi_sub.as_ref().unset_condition_variable();
     }
 
-    pub fn unsubscribe(self, sample_receiver: SampleReceiver<T, S>) -> Topic<T> {
+    pub fn unsubscribe(self, sample_receiver: SampleReceiver<T, S>) -> InactiveSubscriber<T> {
         self.ffi_sub.as_ref().unsubscribe();
 
         drop(sample_receiver);
 
-        Topic::from_ffi(self.ffi_sub.take())
+        InactiveSubscriber::from_ffi(self.ffi_sub.take())
     }
 }

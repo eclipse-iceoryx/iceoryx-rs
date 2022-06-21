@@ -10,11 +10,11 @@ use crate::Runtime;
 use anyhow::{anyhow, Result};
 
 #[repr(C)]
-struct CounterTopic {
+struct Counter {
     counter: u32,
 }
 
-unsafe impl POD for CounterTopic {}
+unsafe impl POD for Counter {}
 
 #[test]
 fn basic_pub_sub() -> Result<()> {
@@ -22,15 +22,14 @@ fn basic_pub_sub() -> Result<()> {
 
     Runtime::init("basic_pub_sub");
 
-    let topic = sb::TopicBuilder::<CounterTopic>::new("Test", "BasicPubSub", "Counter")
+    let topic = sb::TopicBuilder::<Counter>::new("Test", "BasicPubSub", "Counter")
         .queue_capacity(5)
         .build();
 
     let (subscriber, sample_receive_token) = topic.subscribe();
 
-    let topic = pb::TopicBuilder::<CounterTopic>::new("Test", "BasicPubSub", "Counter").build()?;
+    let publisher = pb::PublisherBuilder::<Counter>::new("Test", "BasicPubSub", "Counter").create()?;
 
-    let publisher = topic.offer();
     let mut sample = publisher.allocate_sample()?;
 
     const SEND_COUNTER: u32 = 42;

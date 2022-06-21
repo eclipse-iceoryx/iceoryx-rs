@@ -8,8 +8,8 @@ use thiserror::Error;
 pub enum IceOryxError {
     #[error("could not alloce a chunk")]
     ChunkAllocationFailed,
-    #[error("could not create a publisher topic")]
-    PublisherTopicCreationFailed,
+    #[error("could not create a publisher")]
+    PublisherCreationFailed,
     #[error("number of allowed chunks to hold is exhausted")]
     TooManyChunksHoldInParallel,
 }

@@ -1,5 +1,9 @@
 # iceoryx-rs
 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Build & Test](https://github.com/eclipse-iceoryx/iceoryx-rs/workflows/Build%20&%20Test/badge.svg?branch=master)](https://github.com/eclipse-iceoryx/iceoryx-rs/actions)
+[![Codecov](https://codecov.io/gh/eclipse-iceoryx/iceoryx-rs/branch/master/graph/badge.svg?branch=master)](https://codecov.io/gh/eclipse-iceoryx/iceoryx-rs?branch=master)
+
 <p align="center">
 <img src="https://user-images.githubusercontent.com/8661268/114321508-64a6b000-9b1b-11eb-95ef-b84c91387cff.png" width="50%">
 </p>
@@ -8,9 +12,9 @@ Experimental rust wrapper for the [iceoryx](https://github.com/eclipse-iceoryx/i
 
 # clone and build
 
-The iceoryx repo is include as git submodule, therefore keep in mind to checkout with the `--recursive` option.
+Clone the repository with
 ```
-git clone https://github.com/elBoberido/iceoryx-rs.git --recursive
+git clone https://github.com/elBoberido/iceoryx-rs.git
 ```
 
 To build the examples run

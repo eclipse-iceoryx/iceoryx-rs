@@ -1,0 +1,6 @@
+ignore:
+  - "build.rs"
+  - "examples"
+  - "src/testing"
+  - "src/tests"
+

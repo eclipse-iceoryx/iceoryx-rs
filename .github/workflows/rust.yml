@@ -10,8 +10,23 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  pre-flight-check:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        components: rustfmt
+        override: true
+    - name: Check formatting
+      run:  cargo fmt --check
+
   build-test:
     runs-on: ${{ matrix.os }}
+    needs: pre-flight-check
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest] #Todo add windows-latest
@@ -19,9 +34,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - uses: hecrj/setup-rust-action@v1
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
       with:
-        rust-version: ${{ matrix.toolchain }}
+        toolchain: ${{ matrix.toolchain }}
+        components: clippy
+        override: true
     - name: Setup cache
       uses: actions/cache@v2
       with:
@@ -39,11 +57,15 @@ jobs:
         sudo apt install -y libacl1-dev libncurses5-dev
     - name: Build
       run: cargo build --all --examples
+    - if: startsWith(matrix.os, 'ubuntu-latest') == true && startsWith(matrix.toolchain, 'stable') == true
+      name: Run clippy # clippy can reuse the previous build artifacts
+      run: cargo clippy
     - name: Run tests
       run: cargo test -- --test-threads=1 # prevent running multiple RouDiEnvironments in parallel
 
   coverage:
     runs-on: ubuntu-latest
+    needs: pre-flight-check
     steps:
     - uses: actions/checkout@v3
     - name: Setup Rust

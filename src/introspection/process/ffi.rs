@@ -3,6 +3,7 @@
 // SPDX-FileContributor: Mathias Kraus
 
 use crate::sb::{InactiveSubscriber, SubscriberBuilder};
+use crate::IceoryxError;
 
 use std::ffi::CStr;
 use std::os::raw::c_char;
@@ -60,12 +61,11 @@ pub struct ProcessIntrospectionTopic {
 }
 
 impl ProcessIntrospectionTopic {
-    pub fn new() -> InactiveSubscriber<Self> {
+    pub fn new() -> Result<InactiveSubscriber<Self>, IceoryxError> {
         SubscriberBuilder::<Self>::new("Introspection", "RouDi_ID", "Process")
             .queue_capacity(1)
             .history_request(1)
             .create_without_subscribe()
-            .expect("Create subscriber")
     }
 
     pub fn processes(&self) -> ProcessIntrospectionContainer {

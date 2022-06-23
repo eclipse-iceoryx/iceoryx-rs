@@ -123,7 +123,7 @@ impl Publisher {
             if !chunk.is_null() {
                 Ok(Box::from_raw(chunk as *mut T))
             } else {
-                Err(IceoryxError::ChunkAllocationFailed)
+                Err(IceoryxError::SampleAllocationFailed)
             }
         }
     }

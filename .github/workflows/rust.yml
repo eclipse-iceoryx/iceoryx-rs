@@ -19,18 +19,24 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-        components: rustfmt
+        profile: minimal
         override: true
+        components: rustfmt
     - name: Check formatting
       run:  cargo fmt --check
 
   build-test:
-    runs-on: ${{ matrix.os }}
     needs: pre-flight-check
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest] #Todo add windows-latest
-        toolchain: [stable, nightly]
+        toolchain: [stable, beta]
+        include:
+        - os: ubuntu-latest
+          toolchain: nightly
+
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.toolchain != 'stable' }}
 
     steps:
     - uses: actions/checkout@v3
@@ -38,8 +44,9 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         toolchain: ${{ matrix.toolchain }}
-        components: clippy
+        profile: minimal
         override: true
+        components: clippy
     - name: Setup cache
       uses: actions/cache@v2
       with:
@@ -50,30 +57,31 @@ jobs:
           ~/.cargo/git/db/
           target/
         key: cache-${{ runner.os }}-toolchain-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.toml') }}-${{ hashFiles('**/build.rs') }}
-    - if: startsWith(matrix.os, 'ubuntu-latest') == true
+    - if: runner.os == 'Linux'
       name: Install dependencies
       run: |
         sudo apt update
         sudo apt install -y libacl1-dev libncurses5-dev
     - name: Build
       run: cargo build --all --examples
-    - if: startsWith(matrix.os, 'ubuntu-latest') == true && startsWith(matrix.toolchain, 'stable') == true
+    - if: runner.os == 'Linux' && matrix.toolchain == 'stable'
       name: Run clippy # clippy can reuse the previous build artifacts
       run: cargo clippy
     - name: Run tests
-      run: cargo test -- --test-threads=1 # prevent running multiple RouDiEnvironments in parallel
+      run: cargo test
 
   coverage:
-    runs-on: ubuntu-latest
     needs: pre-flight-check
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - name: Setup Rust
       uses: actions-rs/toolchain@v1
       with:
         toolchain: nightly
-        components: llvm-tools-preview
+        profile: minimal
         override: true
+        components: llvm-tools-preview
     - name: Setup cache
       uses: actions/cache@v2
       with:
@@ -95,14 +103,44 @@ jobs:
       run: cargo build
     - name: Run test
       env:
-        LLVM_PROFILE_FILE: iceoryx-rs-%p-%m.profraw
+        LLVM_PROFILE_FILE: target/debug/llvm-profile-files/iceoryx-rs-%p-%m.profraw
         RUSTFLAGS: -Cinstrument-coverage
-      run: cargo test -- --test-threads=1 # prevent running multiple RouDiEnvironments in parallel
-    - name: Generate coverage
+      run: cargo test
+    - name: Generate coverage results for html artifacts
       run: |
-        grcov . --binary-path ./target/debug/ -s . -t lcov --branch --ignore-not-existing -o ./lcov.info
+        grcov target/debug/llvm-profile-files   \
+          --binary-path target/debug            \
+          --source-dir .                        \
+          --output-type html                    \
+          --branch                              \
+          --ignore-not-existing                 \
+          --ignore build.rs                     \
+          --ignore "examples/*"                 \
+          --ignore "src/testing/*"              \
+          --ignore "src/tests/*"                \
+          --output-path target/debug/coverage-html
+        sed -i 's/coverage/grcov/' target/debug/coverage-html/coverage.json
+    - name: Archive coverage-html artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-html
+        path: target/debug/coverage-html/*
+        retention-days: 00
+    - name: Generate coverage report for Codecov
+      run: |
+        grcov target/debug/llvm-profile-files   \
+          --binary-path target/debug            \
+          --source-dir .                        \
+          --output-type lcov                    \
+          --branch                              \
+          --ignore-not-existing                 \
+          --ignore build.rs                     \
+          --ignore "examples/*"                 \
+          --ignore "src/testing/*"              \
+          --ignore "src/tests/*"                \
+          --output-path target/debug/lcov.info
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
-        file: ./lcov.info
+        file: target/debug/lcov.info
         fail_ci_if_error: true

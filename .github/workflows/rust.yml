@@ -23,7 +23,7 @@ jobs:
         override: true
         components: rustfmt
     - name: Check formatting
-      run:  cargo fmt --check
+      run: cargo fmt --check
 
   build-test:
     needs: pre-flight-check
@@ -57,18 +57,20 @@ jobs:
           ~/.cargo/git/db/
           target/
         key: cache-${{ runner.os }}-toolchain-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.toml') }}-${{ hashFiles('**/build.rs') }}
-    - if: runner.os == 'Linux'
-      name: Install dependencies
+    - name: Install dependencies
       run: |
-        sudo apt update
-        sudo apt install -y libacl1-dev libncurses5-dev
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          sudo apt update
+          sudo apt install -y libacl1-dev libncurses5-dev
+        fi
+        cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
     - name: Build
       run: cargo build --all --examples
     - if: runner.os == 'Linux' && matrix.toolchain == 'stable'
       name: Run clippy # clippy can reuse the previous build artifacts
       run: cargo clippy
     - name: Run tests
-      run: cargo test
+      run: cargo nextest run --test-threads 1
 
   coverage:
     needs: pre-flight-check
@@ -96,6 +98,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y libacl1-dev libncurses5-dev
+        cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
         grcov --version > /dev/null || cargo install grcov
     - name: Build
       env:
@@ -105,7 +108,7 @@ jobs:
       env:
         LLVM_PROFILE_FILE: target/debug/llvm-profile-files/iceoryx-rs-%p-%m.profraw
         RUSTFLAGS: -Cinstrument-coverage
-      run: cargo test
+      run: cargo nextest run --test-threads 1
     - name: Generate coverage results for html artifacts
       run: |
         grcov target/debug/llvm-profile-files   \

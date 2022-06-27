@@ -2,13 +2,14 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-use super::{ffi::Publisher as FfiPublisher, sample::SampleMut, PublisherOptions, POD};
+use super::{ffi::Publisher as FfiPublisher, sample::SampleMut, PublisherOptions};
+use crate::marker::ShmSend;
 use crate::ConsumerTooSlowPolicy;
 use crate::IceoryxError;
 
 use std::marker::PhantomData;
 
-pub struct PublisherBuilder<'a, T: POD> {
+pub struct PublisherBuilder<'a, T: ShmSend> {
     service: &'a str,
     instance: &'a str,
     event: &'a str,
@@ -16,7 +17,7 @@ pub struct PublisherBuilder<'a, T: POD> {
     phantom: PhantomData<T>,
 }
 
-impl<'a, T: POD> PublisherBuilder<'a, T> {
+impl<'a, T: ShmSend> PublisherBuilder<'a, T> {
     pub fn new(service: &'a str, instance: &'a str, event: &'a str) -> Self {
         Self {
             service,
@@ -68,12 +69,12 @@ impl<'a, T: POD> PublisherBuilder<'a, T> {
     }
 }
 
-pub struct InactivePublisher<T: POD> {
+pub struct InactivePublisher<T: ShmSend> {
     ffi_pub: Box<FfiPublisher>,
     phantom: PhantomData<T>,
 }
 
-impl<T: POD> InactivePublisher<T> {
+impl<T: ShmSend> InactivePublisher<T> {
     fn new_from_publisher(publisher: Publisher<T>) -> Self {
         Self {
             ffi_pub: publisher.ffi_pub,
@@ -87,12 +88,12 @@ impl<T: POD> InactivePublisher<T> {
     }
 }
 
-pub struct Publisher<T: POD> {
+pub struct Publisher<T: ShmSend> {
     ffi_pub: Box<FfiPublisher>,
     phantom: PhantomData<T>,
 }
 
-impl<T: POD> Publisher<T> {
+impl<T: ShmSend> Publisher<T> {
     fn new_from_inactive_publisher(publisher: InactivePublisher<T>) -> Self {
         Self {
             ffi_pub: publisher.ffi_pub,

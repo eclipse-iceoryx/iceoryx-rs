@@ -2,7 +2,8 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-use iceoryx_rs::pb::{PublisherBuilder, POD};
+use iceoryx_rs::marker::ShmSend;
+use iceoryx_rs::pb::PublisherBuilder;
 use iceoryx_rs::Runtime;
 
 use std::error::Error;
@@ -14,7 +15,7 @@ struct Counter {
     counter: u32,
 }
 
-unsafe impl POD for Counter {}
+unsafe impl ShmSend for Counter {}
 
 fn main() -> Result<(), Box<dyn Error>> {
     Runtime::init("publisher_simple");

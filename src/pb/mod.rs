@@ -8,6 +8,5 @@ mod publisher_options;
 mod sample;
 
 pub use publisher::{InactivePublisher, Publisher, PublisherBuilder};
-pub use sample::POD;
 
 use publisher_options::PublisherOptions;

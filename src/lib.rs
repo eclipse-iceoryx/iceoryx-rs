@@ -12,6 +12,7 @@ mod queue_policy;
 mod runtime;
 
 pub mod introspection;
+pub mod marker;
 pub mod pb;
 pub mod sb;
 

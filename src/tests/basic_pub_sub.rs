@@ -2,7 +2,8 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-use crate::pb::{self, POD};
+use crate::marker::ShmSend;
+use crate::pb;
 use crate::sb;
 use crate::testing::RouDiEnvironment;
 use crate::Runtime;
@@ -14,7 +15,7 @@ struct Counter {
     counter: u32,
 }
 
-unsafe impl POD for Counter {}
+unsafe impl ShmSend for Counter {}
 
 #[test]
 fn basic_pub_sub() -> Result<()> {

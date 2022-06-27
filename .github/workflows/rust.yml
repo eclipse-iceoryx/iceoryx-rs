@@ -56,7 +56,7 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           target/
-        key: cache-${{ runner.os }}-toolchain-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.toml') }}-${{ hashFiles('**/build.rs') }}
+        key: cache-1-${{ runner.os }}-toolchain-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.toml') }}-${{ hashFiles('**/build.rs') }}
     - name: Install dependencies
       run: |
         if [ "$RUNNER_OS" == "Linux" ]; then
@@ -93,7 +93,7 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           target/
-        key: coverage-llvm-tools-preview-cache-${{ runner.os }}-toolchain-nightly-${{ hashFiles('**/Cargo.toml') }}-${{ hashFiles('**/build.rs') }}
+        key: coverage-llvm-tools-preview-cache-1-${{ runner.os }}-toolchain-nightly-${{ hashFiles('**/Cargo.toml') }}-${{ hashFiles('**/build.rs') }}
     - name: Install dependencies
       run: |
         sudo apt update

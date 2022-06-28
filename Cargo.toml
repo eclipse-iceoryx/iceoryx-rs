@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "iceoryx-rs"
-version = "0.0.10"
+version = "0.0.11"
 authors = ["elBoberido <k.hias@gmx.de>"]
 build = "build.rs"
 description = "Rust wrapper for Eclipse iceoryx - true zero-copy inter-process communication"

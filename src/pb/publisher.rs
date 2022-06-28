@@ -8,6 +8,7 @@ use crate::ConsumerTooSlowPolicy;
 use crate::IceoryxError;
 
 use std::marker::PhantomData;
+use std::mem::MaybeUninit;
 
 pub struct PublisherBuilder<'a, T: ShmSend> {
     service: &'a str,
@@ -114,13 +115,6 @@ impl<T: ShmSend> Publisher<T> {
         self.ffi_pub.has_subscribers()
     }
 
-    pub fn allocate_sample(&self) -> Result<SampleMut<T>, IceoryxError> {
-        Ok(SampleMut {
-            data: Some(self.ffi_pub.allocate_chunk()?),
-            service: self,
-        })
-    }
-
     pub fn publish(&self, mut sample: SampleMut<T>) {
         if let Some(chunk) = sample.data.take() {
             sample.service.ffi_pub.send_chunk(chunk)
@@ -129,5 +123,34 @@ impl<T: ShmSend> Publisher<T> {
 
     pub(super) fn release_chunk(&self, chunk: Box<T>) {
         self.ffi_pub.free_chunk(chunk);
+    }
+}
+
+impl<T: ShmSend + Default> Publisher<T> {
+    pub fn allocate_sample(&self) -> Result<SampleMut<T>, IceoryxError> {
+        let mut data = self.ffi_pub.allocate_chunk()?;
+
+        // TDDO use this once 'new_uninit' is stabilized
+        // let data = Box::write(data, T::default());
+        // until then, the transmute is not nice but safe since MaybeUninit has the same layout as the inner type
+        (*data).write(T::default());
+        let data = unsafe { std::mem::transmute::<Box<MaybeUninit<T>>, Box<T>>(data) };
+
+        Ok(SampleMut {
+            data: Some(data),
+            service: self,
+        })
+    }
+}
+
+impl<T: ShmSend> Publisher<T> {
+    pub fn allocate_sample_uninitialized(&self) -> Result<SampleMut<MaybeUninit<T>>, IceoryxError> {
+        Ok(SampleMut {
+            data: Some(self.ffi_pub.allocate_chunk()?),
+            service: unsafe {
+                // the transmute is not nice but save since MaybeUninit has the same layout as the inner type
+                std::mem::transmute::<&Publisher<T>, &Publisher<MaybeUninit<T>>>(self)
+            },
+        })
     }
 }

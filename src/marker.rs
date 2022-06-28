@@ -2,6 +2,8 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
+use std::mem::MaybeUninit;
+
 /// # Safety
 ///
 /// This is a marker trait for types that can be transferred via shared memory.
@@ -40,6 +42,8 @@ unsafe impl<T: ShmSend, const N: usize> ShmSend for [T; N] {}
 unsafe impl<T: ShmSend> ShmSend for Option<T> {}
 
 unsafe impl<T: ShmSend, E: ShmSend> ShmSend for Result<T, E> {}
+
+unsafe impl<T: ShmSend> ShmSend for MaybeUninit<T> {}
 
 // TODO create macro to impl ShmSend for tuples
 unsafe impl<T1, T2> ShmSend for (T1, T2)

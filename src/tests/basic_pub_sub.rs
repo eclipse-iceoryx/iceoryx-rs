@@ -11,6 +11,7 @@ use crate::Runtime;
 use anyhow::{anyhow, Result};
 
 #[repr(C)]
+#[derive(Default)]
 struct Counter {
     counter: u32,
 }

@@ -10,3 +10,5 @@ mod sample;
 pub use publisher::{InactivePublisher, Publisher, PublisherBuilder};
 
 use publisher_options::PublisherOptions;
+
+pub use sample::SampleMut;

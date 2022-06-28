@@ -6,6 +6,7 @@ use crate::pb::PublisherOptions;
 use crate::IceoryxError;
 
 use std::ffi::CString;
+use std::mem::MaybeUninit;
 
 cpp! {{
     #include "iceoryx_posh/internal/popo/ports/publisher_port_user.hpp"
@@ -105,7 +106,7 @@ impl Publisher {
         }
     }
 
-    pub fn allocate_chunk<T>(&self) -> Result<Box<T>, IceoryxError> {
+    pub fn allocate_chunk<T>(&self) -> Result<Box<MaybeUninit<T>>, IceoryxError> {
         let payload_size = std::mem::size_of::<T>() as u32;
         unsafe {
             let chunk = cpp!([self as "PublisherPortUser*", payload_size as "uint32_t"] -> *mut std::ffi::c_void as "void*" {
@@ -121,7 +122,7 @@ impl Publisher {
             });
 
             if !chunk.is_null() {
-                Ok(Box::from_raw(chunk as *mut T))
+                Ok(Box::from_raw(chunk as *mut MaybeUninit<T>))
             } else {
                 Err(IceoryxError::SampleAllocationFailed)
             }

@@ -1,10 +1,19 @@
 [package]
+edition = "2018"
 name = "iceoryx-rs"
 version = "0.0.10"
-authors = ["Mathias »Bob« Kraus <k.hias@gmx.de>"]
-edition = "2018"
-license = "Apache-2.0"
+authors = ["elBoberido <k.hias@gmx.de>"]
 build = "build.rs"
+description = "Rust wrapper for Eclipse iceoryx - true zero-copy inter-process communication"
+keywords = [
+    "zero-copy",
+    "shared-memory",
+    "inter-process",
+    "publish-subscribe",
+    "request-response"
+]
+license = "Apache-2.0"
+repository = "https://github.com/eclipse-iceoryx/iceoryx-rs"
 
 [lib]
 name = "iceoryx_rs"

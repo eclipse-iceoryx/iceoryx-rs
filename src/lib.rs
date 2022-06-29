@@ -2,21 +2,43 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-mod error;
-
 pub mod introspection;
 pub mod marker;
-pub mod pb;
-pub mod sb;
 
-// re-export types
+mod error;
 pub use error::IceoryxError;
-pub use pb::Publisher;
-pub use pb::SampleMut;
 
-pub use sb::InactiveSubscriber;
-pub use sb::SubscriberBuilder;
-pub use sb::{mt, st};
+mod publisher;
+pub use publisher::InactivePublisher;
+pub use publisher::Publisher;
+pub use publisher::PublisherBuilder;
+
+mod subscriber;
+pub use subscriber::InactiveSubscriber;
+pub use subscriber::SubscriberBuilder;
+
+mod sample_mut;
+pub use sample_mut::SampleMut;
+
+mod sample;
+pub use sample::Sample;
+pub use sample::SampleReceiverWaitState;
+
+pub mod st {
+    use super::*;
+
+    pub type Sample<T> = sample::Sample<T, ffi::SubscriberRc>;
+    pub type SampleReceiver<T> = sample::SampleReceiver<T, ffi::SubscriberRc>;
+    pub type Subscriber<T> = subscriber::Subscriber<T, ffi::SubscriberRc>;
+}
+
+pub mod mt {
+    use super::*;
+
+    pub type Sample<T> = sample::Sample<T, ffi::SubscriberArc>;
+    pub type SampleReceiver<T> = sample::SampleReceiver<T, ffi::SubscriberArc>;
+    pub type Subscriber<T> = subscriber::Subscriber<T, ffi::SubscriberArc>;
+}
 
 // re-exports from iceoryx-sys
 pub use ffi::ConsumerTooSlowPolicy;

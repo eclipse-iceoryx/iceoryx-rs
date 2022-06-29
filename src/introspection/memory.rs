@@ -3,8 +3,8 @@
 // SPDX-FileContributor: Mathias Kraus
 
 use crate::introspection::MemPoolIntrospectionTopic;
-use crate::sb::{InactiveSubscriber, SubscriberBuilder};
 use crate::IceoryxError;
+use crate::{InactiveSubscriber, SubscriberBuilder};
 
 use std::marker::PhantomData;
 

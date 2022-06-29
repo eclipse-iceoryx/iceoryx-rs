@@ -3,7 +3,7 @@
 // SPDX-FileContributor: Mathias Kraus
 
 use iceoryx_rs::marker::ShmSend;
-use iceoryx_rs::pb::PublisherBuilder;
+use iceoryx_rs::PublisherBuilder;
 use iceoryx_rs::Runtime;
 
 use std::error::Error;

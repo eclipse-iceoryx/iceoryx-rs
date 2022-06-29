@@ -2,8 +2,8 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-use iceoryx_rs::sb::{SampleReceiverWaitState, SubscriberBuilder};
 use iceoryx_rs::Runtime;
+use iceoryx_rs::{SampleReceiverWaitState, SubscriberBuilder};
 
 use std::error::Error;
 use std::thread;

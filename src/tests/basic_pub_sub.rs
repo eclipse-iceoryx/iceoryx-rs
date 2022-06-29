@@ -3,10 +3,10 @@
 // SPDX-FileContributor: Mathias Kraus
 
 use crate::marker::ShmSend;
-use crate::pb;
-use crate::sb;
 use crate::testing::RouDiEnvironment;
+use crate::PublisherBuilder;
 use crate::Runtime;
+use crate::SubscriberBuilder;
 
 use anyhow::{anyhow, Result};
 
@@ -25,12 +25,11 @@ fn basic_pub_sub() -> Result<()> {
     Runtime::init("basic_pub_sub");
 
     let (subscriber, sample_receive_token) =
-        sb::SubscriberBuilder::<Counter>::new("Test", "BasicPubSub", "Counter")
+        SubscriberBuilder::<Counter>::new("Test", "BasicPubSub", "Counter")
             .queue_capacity(5)
             .create()?;
 
-    let publisher =
-        pb::PublisherBuilder::<Counter>::new("Test", "BasicPubSub", "Counter").create()?;
+    let publisher = PublisherBuilder::<Counter>::new("Test", "BasicPubSub", "Counter").create()?;
 
     let mut sample = publisher.allocate_sample()?;
 

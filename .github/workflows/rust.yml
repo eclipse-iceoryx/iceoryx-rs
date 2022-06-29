@@ -111,7 +111,9 @@ jobs:
       run: cargo nextest run --test-threads 1
     - name: Generate coverage results for html artifacts
       run: |
-        grcov target/debug/llvm-profile-files               \
+        grcov                                               \
+          target/debug/llvm-profile-files                   \
+          iceoryx-sys/target/debug/llvm-profile-files       \
           --binary-path target/debug                        \
           --source-dir .                                    \
           --output-type html                                \
@@ -119,7 +121,7 @@ jobs:
           --ignore-not-existing                             \
           --ignore "examples/*"                             \
           --ignore "iceoryx-sys/build.rs"                   \
-          --ignore "iceoryx-sys/src/roudi_environment.rs    \
+          --ignore "iceoryx-sys/src/roudi_environment.rs"   \
           --ignore "src/tests/*"                            \
           --output-path target/debug/coverage-html
         sed -i 's/coverage/grcov/' target/debug/coverage-html/coverage.json
@@ -131,7 +133,9 @@ jobs:
         retention-days: 00
     - name: Generate coverage report for Codecov
       run: |
-        grcov target/debug/llvm-profile-files               \
+        grcov                                               \
+          target/debug/llvm-profile-files                   \
+          iceoryx-sys/target/debug/llvm-profile-files       \
           --binary-path target/debug                        \
           --source-dir .                                    \
           --output-type lcov                                \
@@ -139,7 +143,7 @@ jobs:
           --ignore-not-existing                             \
           --ignore "examples/*"                             \
           --ignore "iceoryx-sys/build.rs"                   \
-          --ignore "iceoryx-sys/src/roudi_environment.rs    \
+          --ignore "iceoryx-sys/src/roudi_environment.rs"   \
           --ignore "src/tests/*"                            \
           --output-path target/debug/lcov.info
     - name: Upload coverage to Codecov

@@ -2,9 +2,6 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-use crate::sb::{InactiveSubscriber, SubscriberBuilder};
-use crate::IceoryxError;
-
 use std::ffi::CStr;
 use std::marker::PhantomData;
 use std::os::raw::c_char;
@@ -120,17 +117,11 @@ pub struct MemorySegmentContainer<'a> {
 }
 
 pub struct MemPoolIntrospectionTopic {
+    phantom: PhantomData<()>,
     // this is actually the MemPoolIntrospectionInfoContainer with the memory segment introspection
 }
 
 impl MemPoolIntrospectionTopic {
-    pub fn new() -> Result<InactiveSubscriber<Self>, IceoryxError> {
-        SubscriberBuilder::<Self>::new("Introspection", "RouDi_ID", "MemPool")
-            .queue_capacity(1)
-            .history_request(1)
-            .create_without_subscribe()
-    }
-
     pub fn memory_segments(&self) -> MemorySegmentContainer {
         MemorySegmentContainer {
             memory_segments: &*self,

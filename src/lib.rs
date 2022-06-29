@@ -2,14 +2,7 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-#![recursion_limit = "256"]
-
-#[macro_use]
-extern crate cpp;
-
 mod error;
-mod queue_policy;
-mod runtime;
 
 pub mod introspection;
 pub mod marker;
@@ -18,10 +11,24 @@ pub mod sb;
 
 // re-export types
 pub use error::IceoryxError;
-pub use queue_policy::{ConsumerTooSlowPolicy, QueueFullPolicy};
-pub use runtime::Runtime;
+pub use pb::Publisher;
+pub use pb::SampleMut;
+
+pub use sb::InactiveSubscriber;
+pub use sb::SubscriberBuilder;
+pub use sb::{mt, st};
+
+// re-exports from iceoryx-sys
+pub use ffi::ConsumerTooSlowPolicy;
+pub use ffi::QueueFullPolicy;
+pub use ffi::Runtime;
+pub use ffi::SubscribeState;
 
 #[cfg(test)]
-mod testing;
+pub(crate) mod testing {
+    #[cfg(test)]
+    pub(crate) use ffi::RouDiEnvironment;
+}
+
 #[cfg(test)]
 mod tests;

@@ -2,10 +2,8 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-use crate::sb::{InactiveSubscriber, SubscriberBuilder};
-use crate::IceoryxError;
-
 use std::ffi::CStr;
+use std::marker::PhantomData;
 use std::os::raw::c_char;
 
 cpp! {{
@@ -57,17 +55,11 @@ pub struct ProcessIntrospectionContainer<'a> {
 #[repr(C)]
 #[derive(Debug)]
 pub struct ProcessIntrospectionTopic {
+    phantom: PhantomData<()>,
     // here the process data follows, but it's in a iox::cxx::Vector container and therefore we cannot directly access it from rust
 }
 
 impl ProcessIntrospectionTopic {
-    pub fn new() -> Result<InactiveSubscriber<Self>, IceoryxError> {
-        SubscriberBuilder::<Self>::new("Introspection", "RouDi_ID", "Process")
-            .queue_capacity(1)
-            .history_request(1)
-            .create_without_subscribe()
-    }
-
     pub fn processes(&self) -> ProcessIntrospectionContainer {
         ProcessIntrospectionContainer {
             parent: &*self,

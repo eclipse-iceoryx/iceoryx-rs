@@ -2,8 +2,7 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-use crate::pb::PublisherOptions;
-use crate::IceoryxError;
+use crate::PublisherOptions;
 
 use std::ffi::CString;
 use std::mem::MaybeUninit;
@@ -23,7 +22,7 @@ cpp! {{
 cpp_class!(pub unsafe struct Publisher as "PublisherPortUser");
 
 impl Publisher {
-    pub(super) fn new(
+    pub fn new(
         service: &str,
         instance: &str,
         event: &str,
@@ -106,7 +105,7 @@ impl Publisher {
         }
     }
 
-    pub fn allocate_chunk<T>(&self) -> Result<Box<MaybeUninit<T>>, IceoryxError> {
+    pub fn allocate_chunk<T>(&self) -> Option<Box<MaybeUninit<T>>> {
         let payload_size = std::mem::size_of::<T>() as u32;
         unsafe {
             let chunk = cpp!([self as "PublisherPortUser*", payload_size as "uint32_t"] -> *mut std::ffi::c_void as "void*" {
@@ -122,9 +121,9 @@ impl Publisher {
             });
 
             if !chunk.is_null() {
-                Ok(Box::from_raw(chunk as *mut MaybeUninit<T>))
+                Some(Box::from_raw(chunk as *mut MaybeUninit<T>))
             } else {
-                Err(IceoryxError::SampleAllocationFailed)
+                None
             }
         }
     }

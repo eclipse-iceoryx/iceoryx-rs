@@ -6,7 +6,7 @@ use crate::QueueFullPolicy;
 
 use std::marker::PhantomData;
 
-pub(super) struct SubscriberOptions {
+pub struct SubscriberOptions {
     pub queue_capacity: u64,
     pub history_request: u64,
     pub node_name: String,

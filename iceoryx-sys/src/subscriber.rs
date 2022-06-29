@@ -3,7 +3,7 @@
 // SPDX-FileContributor: Mathias Kraus
 // SPDX-FileContributor: Apex.AI
 
-use crate::sb::SubscriberOptions;
+use crate::SubscriberOptions;
 
 use std::ffi::CString;
 use std::fmt;
@@ -117,7 +117,7 @@ cpp_class!(pub unsafe struct Subscriber as "SubscriberPortUser");
 cpp_class!(pub unsafe struct ConditionVariable as "ConditionVariable");
 
 impl Subscriber {
-    pub(super) fn new(
+    pub fn new(
         service: &str,
         instance: &str,
         event: &str,
@@ -285,7 +285,7 @@ impl fmt::Debug for Subscriber {
 }
 
 impl ConditionVariable {
-    pub(super) fn new() -> Box<Self> {
+    pub fn new() -> Box<Self> {
         unsafe {
             let raw = cpp!([] -> *mut ConditionVariable as "ConditionVariable*"
             {
@@ -296,7 +296,7 @@ impl ConditionVariable {
         }
     }
 
-    pub(super) fn timed_wait(&self, timeout: Duration) {
+    pub fn timed_wait(&self, timeout: Duration) {
         unsafe {
             let timeout_ns = timeout.as_nanos() as u64;
             cpp!([self as "ConditionVariable*", timeout_ns as "uint64_t"] {

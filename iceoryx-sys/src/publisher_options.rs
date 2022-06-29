@@ -6,7 +6,7 @@ use crate::ConsumerTooSlowPolicy;
 
 use std::marker::PhantomData;
 
-pub(super) struct PublisherOptions {
+pub struct PublisherOptions {
     pub history_capacity: u64,
     pub node_name: String,
     pub offer_on_create: bool,

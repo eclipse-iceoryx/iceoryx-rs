@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-use super::{ffi::Publisher as FfiPublisher, sample::SampleMut, PublisherOptions};
+use super::sample::SampleMut;
 use crate::marker::ShmSend;
 use crate::ConsumerTooSlowPolicy;
 use crate::IceoryxError;
@@ -14,7 +14,7 @@ pub struct PublisherBuilder<'a, T: ShmSend> {
     service: &'a str,
     instance: &'a str,
     event: &'a str,
-    options: PublisherOptions,
+    options: ffi::PublisherOptions,
     phantom: PhantomData<T>,
 }
 
@@ -24,7 +24,7 @@ impl<'a, T: ShmSend> PublisherBuilder<'a, T> {
             service,
             instance,
             event,
-            options: PublisherOptions::default(),
+            options: ffi::PublisherOptions::default(),
             phantom: PhantomData,
         }
     }
@@ -49,7 +49,7 @@ impl<'a, T: ShmSend> PublisherBuilder<'a, T> {
 
     pub fn create(mut self) -> Result<Publisher<T>, IceoryxError> {
         self.options.offer_on_create = true;
-        let ffi_pub = FfiPublisher::new(self.service, self.instance, self.event, &self.options)
+        let ffi_pub = ffi::Publisher::new(self.service, self.instance, self.event, &self.options)
             .ok_or(IceoryxError::PublisherCreationFailed)?;
 
         Ok(Publisher {
@@ -60,7 +60,7 @@ impl<'a, T: ShmSend> PublisherBuilder<'a, T> {
 
     pub fn create_without_offer(mut self) -> Result<InactivePublisher<T>, IceoryxError> {
         self.options.offer_on_create = false;
-        let ffi_pub = FfiPublisher::new(self.service, self.instance, self.event, &self.options)
+        let ffi_pub = ffi::Publisher::new(self.service, self.instance, self.event, &self.options)
             .ok_or(IceoryxError::PublisherCreationFailed)?;
 
         Ok(InactivePublisher {
@@ -71,7 +71,7 @@ impl<'a, T: ShmSend> PublisherBuilder<'a, T> {
 }
 
 pub struct InactivePublisher<T: ShmSend> {
-    ffi_pub: Box<FfiPublisher>,
+    ffi_pub: Box<ffi::Publisher>,
     phantom: PhantomData<T>,
 }
 
@@ -90,7 +90,7 @@ impl<T: ShmSend> InactivePublisher<T> {
 }
 
 pub struct Publisher<T: ShmSend> {
-    ffi_pub: Box<FfiPublisher>,
+    ffi_pub: Box<ffi::Publisher>,
     phantom: PhantomData<T>,
 }
 
@@ -128,7 +128,10 @@ impl<T: ShmSend> Publisher<T> {
 
 impl<T: ShmSend + Default> Publisher<T> {
     pub fn allocate_sample(&self) -> Result<SampleMut<T>, IceoryxError> {
-        let mut data = self.ffi_pub.allocate_chunk()?;
+        let mut data = self
+            .ffi_pub
+            .allocate_chunk::<T>()
+            .ok_or(IceoryxError::SampleAllocationFailed)?;
 
         // TDDO use this once 'new_uninit' is stabilized
         // let data = Box::write(data, T::default());
@@ -145,8 +148,13 @@ impl<T: ShmSend + Default> Publisher<T> {
 
 impl<T: ShmSend> Publisher<T> {
     pub fn allocate_sample_uninitialized(&self) -> Result<SampleMut<MaybeUninit<T>>, IceoryxError> {
+        let data = self
+            .ffi_pub
+            .allocate_chunk::<T>()
+            .ok_or(IceoryxError::SampleAllocationFailed)?;
+
         Ok(SampleMut {
-            data: Some(self.ffi_pub.allocate_chunk()?),
+            data: Some(data),
             service: unsafe {
                 // the transmute is not nice but save since MaybeUninit has the same layout as the inner type
                 std::mem::transmute::<&Publisher<T>, &Publisher<MaybeUninit<T>>>(self)

@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-use super::{ffi, SubscribeState};
+use crate::SubscribeState;
 
 use std::marker::PhantomData;
 use std::time::{Duration, SystemTime};
@@ -98,7 +98,7 @@ impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
     }
 }
 
-impl<T, S: super::ffi::SubscriberStrongRef> Drop for SampleReceiver<T, S> {
+impl<T, S: ffi::SubscriberStrongRef> Drop for SampleReceiver<T, S> {
     fn drop(&mut self) {
         self.ffi_sub.as_ref().unset_condition_variable();
         self.ffi_sub.as_ref().unsubscribe();

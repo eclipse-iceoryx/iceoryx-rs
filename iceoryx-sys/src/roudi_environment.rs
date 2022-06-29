@@ -11,7 +11,7 @@ cpp! {{
 cpp_class!(pub unsafe struct RouDiEnvironment as "RouDiEnvironment");
 
 impl RouDiEnvironment {
-    pub(crate) fn new() -> Box<Self> {
+    pub fn new() -> Box<Self> {
         unsafe {
             let raw = cpp!([] -> *mut RouDiEnvironment as "RouDiEnvironment*"
             {

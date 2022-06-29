@@ -1,14 +1,10 @@
-[workspace]
-members = [
-    "iceoryx-sys"
-]
-
 [package]
 edition = "2018"
-name = "iceoryx-rs"
+name = "iceoryx-sys"
 version = "0.0.13"
 authors = ["elBoberido <k.hias@gmx.de>"]
-description = "Idiomatic Rust bindings to Eclipse iceoryx - true zero-copy inter-process communication"
+build = "build.rs"
+description = "Low level bindings to Eclipse iceoryx"
 keywords = [
     "zero-copy",
     "shared-memory",
@@ -20,11 +16,11 @@ license = "Apache-2.0"
 repository = "https://github.com/eclipse-iceoryx/iceoryx-rs"
 
 [lib]
-name = "iceoryx_rs"
+name = "iceoryx_sys"
+
+[build-dependencies]
+cpp_build = "0.5"
 
 [dependencies]
-ffi = { package = "iceoryx-sys", version = "0.0.13", path = "./iceoryx-sys" }
+cpp = "0.5"
 thiserror = "1.0"
-
-[dev-dependencies]
-anyhow = "1.0"

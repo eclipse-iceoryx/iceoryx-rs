@@ -9,7 +9,7 @@
 <img src="https://user-images.githubusercontent.com/8661268/114321508-64a6b000-9b1b-11eb-95ef-b84c91387cff.png" width="50%">
 </p>
 
-Experimental rust wrapper for the [iceoryx](https://github.com/eclipse-iceoryx/iceoryx) IPC middleware.
+Experimental Rust bindings for the [iceoryx](https://github.com/eclipse-iceoryx/iceoryx) IPC middleware.
 
 # clone and build
 

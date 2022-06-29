@@ -6,7 +6,13 @@ mod memory;
 mod port;
 mod process;
 
-pub use memory::MemPoolIntrospectionTopic;
-pub use port::PortIntrospectionTopic;
-pub use port::ServiceDescription;
-pub use process::ProcessIntrospectionTopic;
+// re-export types
+pub use memory::MemPoolIntrospection;
+pub use port::PortIntrospection;
+pub use process::ProcessIntrospection;
+
+// re-exports from iceoryx-sys
+pub use ffi::introspection::MemPoolIntrospectionTopic;
+pub use ffi::introspection::PortIntrospectionTopic;
+pub use ffi::introspection::ProcessIntrospectionTopic;
+pub use ffi::introspection::ServiceDescription;

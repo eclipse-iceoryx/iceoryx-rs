@@ -2,12 +2,11 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-use super::{
-    ffi, ffi::SubscriberStrongRef, sample::SampleReceiver, SubscribeState, SubscriberOptions,
-};
+use super::sample::SampleReceiver;
 use super::{mt, st};
 use crate::IceoryxError;
 use crate::QueueFullPolicy;
+use crate::SubscribeState;
 
 use std::marker::PhantomData;
 
@@ -15,7 +14,7 @@ pub struct SubscriberBuilder<'a, T> {
     service: &'a str,
     instance: &'a str,
     event: &'a str,
-    options: SubscriberOptions,
+    options: ffi::SubscriberOptions,
     phantom: PhantomData<T>,
 }
 
@@ -25,7 +24,7 @@ impl<'a, T> SubscriberBuilder<'a, T> {
             service,
             instance,
             event,
-            options: SubscriberOptions::default(),
+            options: ffi::SubscriberOptions::default(),
             phantom: PhantomData,
         }
     }
@@ -132,12 +131,12 @@ impl<T> InactiveSubscriber<T> {
     }
 }
 
-pub struct Subscriber<T, S: SubscriberStrongRef> {
+pub struct Subscriber<T, S: ffi::SubscriberStrongRef> {
     ffi_sub: S,
     phantom: PhantomData<T>,
 }
 
-impl<T, S: SubscriberStrongRef> Subscriber<T, S> {
+impl<T, S: ffi::SubscriberStrongRef> Subscriber<T, S> {
     fn new_from_ffi(ffi_sub: Box<ffi::Subscriber>) -> Self {
         Subscriber {
             ffi_sub: S::new(ffi_sub),

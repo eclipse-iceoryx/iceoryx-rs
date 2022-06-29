@@ -2,10 +2,10 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-use crate::sb::{InactiveSubscriber, SubscriberBuilder};
-use crate::IceoryxError;
+use crate::introspection::ServiceDescription;
 
 use std::ffi::CStr;
+use std::marker::PhantomData;
 use std::os::raw::c_char;
 
 cpp! {{
@@ -17,17 +17,10 @@ cpp! {{
     using iox::roudi::PortIntrospectionFieldTopic;
 }}
 
-// TODO: this should be moved somewhere else
-#[derive(Default, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
-pub struct ServiceDescription {
-    pub service_id: String,
-    pub instance_id: String,
-    pub event_id: String,
-}
-
 #[repr(C)]
 #[derive(Debug)]
 struct PortData {
+    phantom: PhantomData<()>,
     // here the port data follows, but it's all a iox::cxx::stringg and therefore we cannot directly access it
 }
 
@@ -161,17 +154,11 @@ pub struct PublisherPortIntrospectionContainer<'a> {
 #[repr(C)]
 #[derive(Debug)]
 pub struct PortIntrospectionTopic {
+    phantom: PhantomData<()>,
     // here the subscriber/publisher port data follows, but it's in a iox::cxx::Vector container and therefore we cannot directly access it from rust
 }
 
 impl PortIntrospectionTopic {
-    pub fn new() -> Result<InactiveSubscriber<Self>, IceoryxError> {
-        SubscriberBuilder::<Self>::new("Introspection", "RouDi_ID", "Port")
-            .queue_capacity(1)
-            .history_request(1)
-            .create_without_subscribe()
-    }
-
     pub fn subscriber_ports(&self) -> SubscriberPortIntrospectionContainer {
         SubscriberPortIntrospectionContainer {
             parent: &*self,

@@ -2,17 +2,12 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-mod ffi;
 mod sample;
 mod subscriber;
-mod subscriber_options;
 
-pub use ffi::SubscribeState;
 pub use sample::Sample;
 pub use sample::SampleReceiverWaitState;
 pub use subscriber::{InactiveSubscriber, SubscriberBuilder};
-
-use subscriber_options::SubscriberOptions;
 
 pub mod st {
     use super::*;

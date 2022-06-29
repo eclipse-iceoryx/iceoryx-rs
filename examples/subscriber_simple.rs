@@ -2,8 +2,8 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-use iceoryx_rs::sb::SubscriberBuilder;
 use iceoryx_rs::Runtime;
+use iceoryx_rs::SubscriberBuilder;
 
 use std::error::Error;
 use std::thread;

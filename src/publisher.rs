@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-use super::sample::SampleMut;
+use super::SampleMut;
 use crate::marker::ShmSend;
 use crate::ConsumerTooSlowPolicy;
 use crate::IceoryxError;

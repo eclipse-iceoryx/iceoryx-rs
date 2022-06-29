@@ -3,12 +3,12 @@
 // SPDX-FileContributor: Mathias Kraus
 
 mod memory;
-mod port;
-mod process;
-
-// re-export types
 pub use memory::MemPoolIntrospection;
+
+mod port;
 pub use port::PortIntrospection;
+
+mod process;
 pub use process::ProcessIntrospection;
 
 // re-exports from iceoryx-sys

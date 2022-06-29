@@ -94,13 +94,11 @@ fn clone_repo(repo: &str, branch: &str, source_dir: &str) -> std::io::Result<()>
 }
 
 fn main() -> std::io::Result<()> {
-    let current_dir = env::current_dir()?;
-    let current_dir = current_dir.to_str().expect("Valid dir");
-    let out_dir = env::var("OUT_DIR").expect("OUT_DIR");
+    let out_dir = env::var("OUT_DIR").expect("Target output directory");
 
-    let iceoryx_source_dir = format!("{}/{}/{}", current_dir, out_dir, "iceoryx-git");
-    let iceoryx_build_dir = format!("{}/{}/{}", current_dir, out_dir, "iceoryx-build");
-    let iceoryx_install_dir = format!("{}/{}/{}", current_dir, out_dir, "iceoryx-install");
+    let iceoryx_source_dir = format!("{}/{}", out_dir, "iceoryx-git");
+    let iceoryx_build_dir = format!("{}/{}", out_dir, "iceoryx-build");
+    let iceoryx_install_dir = format!("{}/{}", out_dir, "iceoryx-install");
 
     const ICEORYX_VERSION: &str = "v2.0.2";
     const ICEORYX_GIT_BRANCH: &str = ICEORYX_VERSION;

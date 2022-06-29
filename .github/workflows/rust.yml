@@ -61,7 +61,7 @@ jobs:
       run: |
         if [ "$RUNNER_OS" == "Linux" ]; then
           sudo apt update
-          sudo apt install -y libacl1-dev libncurses5-dev
+          sudo apt install -y libacl1-dev
         fi
         cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
     - name: Build
@@ -97,7 +97,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install -y libacl1-dev libncurses5-dev
+        sudo apt install -y libacl1-dev
         cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
         grcov --version > /dev/null || cargo install grcov
     - name: Build

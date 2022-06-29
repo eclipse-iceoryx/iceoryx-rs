@@ -56,7 +56,7 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           target/
-        key: cache-1-${{ runner.os }}-toolchain-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.toml') }}-${{ hashFiles('**/build.rs') }}
+        key: cache-1-${{ runner.os }}-toolchain-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.toml', '**/build.rs') }}
     - name: Install dependencies
       run: |
         if [ "$RUNNER_OS" == "Linux" ]; then
@@ -93,7 +93,7 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           target/
-        key: coverage-llvm-tools-preview-cache-1-${{ runner.os }}-toolchain-nightly-${{ hashFiles('**/Cargo.toml') }}-${{ hashFiles('**/build.rs') }}
+        key: coverage-llvm-tools-preview-cache-1-${{ runner.os }}-toolchain-nightly-${{ hashFiles('**/Cargo.toml', '**/build.rs') }}
     - name: Install dependencies
       run: |
         sudo apt update
@@ -111,16 +111,16 @@ jobs:
       run: cargo nextest run --test-threads 1
     - name: Generate coverage results for html artifacts
       run: |
-        grcov target/debug/llvm-profile-files   \
-          --binary-path target/debug            \
-          --source-dir .                        \
-          --output-type html                    \
-          --branch                              \
-          --ignore-not-existing                 \
-          --ignore build.rs                     \
-          --ignore "examples/*"                 \
-          --ignore "src/testing/*"              \
-          --ignore "src/tests/*"                \
+        grcov target/debug/llvm-profile-files               \
+          --binary-path target/debug                        \
+          --source-dir .                                    \
+          --output-type html                                \
+          --branch                                          \
+          --ignore-not-existing                             \
+          --ignore "examples/*"                             \
+          --ignore "iceoryx-sys/build.rs"                   \
+          --ignore "iceoryx-sys/src/roudi_environment.rs    \
+          --ignore "src/tests/*"                            \
           --output-path target/debug/coverage-html
         sed -i 's/coverage/grcov/' target/debug/coverage-html/coverage.json
     - name: Archive coverage-html artifacts
@@ -131,16 +131,16 @@ jobs:
         retention-days: 00
     - name: Generate coverage report for Codecov
       run: |
-        grcov target/debug/llvm-profile-files   \
-          --binary-path target/debug            \
-          --source-dir .                        \
-          --output-type lcov                    \
-          --branch                              \
-          --ignore-not-existing                 \
-          --ignore build.rs                     \
-          --ignore "examples/*"                 \
-          --ignore "src/testing/*"              \
-          --ignore "src/tests/*"                \
+        grcov target/debug/llvm-profile-files               \
+          --binary-path target/debug                        \
+          --source-dir .                                    \
+          --output-type lcov                                \
+          --branch                                          \
+          --ignore-not-existing                             \
+          --ignore "examples/*"                             \
+          --ignore "iceoryx-sys/build.rs"                   \
+          --ignore "iceoryx-sys/src/roudi_environment.rs    \
+          --ignore "src/tests/*"                            \
           --output-path target/debug/lcov.info
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

@@ -25,8 +25,76 @@ jobs:
     - name: Check formatting
       run: cargo fmt --check
 
-  build-test:
+  # TODO refactor this to a custom action in .github/actions and also use it for the grcov job
+  cargo-nextest:
     needs: pre-flight-check
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest] #Todo add windows-latest
+
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        override: true
+    - name: Setup cache
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: cache-1-${{ runner.os }}-cargo-nextest
+    - name: Install cargo-nextest
+      run: |
+        cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
+        cargo-nextest --version
+    - name: Upload cargo-nextest artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ runner.os }}-cargo-nextest
+        path: ~/.cargo/bin/cargo-nextest
+        retention-days: 00
+
+  grcov:
+    needs: pre-flight-check
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        profile: minimal
+        override: true
+        components: llvm-tools-preview
+    - name: Setup cache
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: cache-1-${{ runner.os }}-grcov
+    - name: Install grcov
+      run: |
+        grcov --version > /dev/null || cargo install grcov
+        grcov --version
+    - name: Upload grcov artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ runner.os }}-grcov
+        path: ~/.cargo/bin/grcov
+        retention-days: 00
+
+  build-test:
+    needs: cargo-nextest
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest] #Todo add windows-latest
@@ -57,13 +125,20 @@ jobs:
           ~/.cargo/git/db/
           target/
         key: cache-1-${{ runner.os }}-toolchain-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.toml', '**/build.rs') }}
+    - name: Download cargo-nextest artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: ${{ runner.os }}-cargo-nextest
+        path: ~/.cargo/bin
+    - name: Make cargo-nextest artifact executable
+      run: |
+        chmod +x ~/.cargo/bin/cargo-nextest
     - name: Install dependencies
       run: |
         if [ "$RUNNER_OS" == "Linux" ]; then
           sudo apt update
           sudo apt install -y libacl1-dev
         fi
-        cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
     - name: Build
       run: cargo build --all --examples
     - if: runner.os == 'Linux' && matrix.toolchain == 'stable'
@@ -73,7 +148,7 @@ jobs:
       run: cargo nextest run --test-threads 1
 
   coverage:
-    needs: pre-flight-check
+    needs: [cargo-nextest, grcov]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -94,12 +169,24 @@ jobs:
           ~/.cargo/git/db/
           target/
         key: coverage-llvm-tools-preview-cache-1-${{ runner.os }}-toolchain-nightly-${{ hashFiles('**/Cargo.toml', '**/build.rs') }}
+    - name: Download artifact cargo-nextest
+      uses: actions/download-artifact@v3
+      with:
+        name: ${{ runner.os }}-cargo-nextest
+        path: ~/.cargo/bin
+    - name: Download artifact grcov
+      uses: actions/download-artifact@v3
+      with:
+        name: ${{ runner.os }}-grcov
+        path: ~/.cargo/bin
+    - name: Make cargo-nextest and grcov artifacts executable
+      run: |
+        chmod +x ~/.cargo/bin/cargo-nextest
+        chmod +x ~/.cargo/bin/grcov
     - name: Install dependencies
       run: |
         sudo apt update
         sudo apt install -y libacl1-dev
-        cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
-        grcov --version > /dev/null || cargo install grcov
     - name: Build
       env:
         RUSTFLAGS: -Cinstrument-coverage

@@ -6,7 +6,7 @@ members = [
 [package]
 edition = "2018"
 name = "iceoryx-rs"
-version = "0.0.13"
+version = "0.1.0"
 authors = ["elBoberido <k.hias@gmx.de>"]
 description = "Safe Rust bindings for Eclipse iceoryx - true zero-copy inter-process communication"
 readme = "README.md"
@@ -24,7 +24,7 @@ repository = "https://github.com/eclipse-iceoryx/iceoryx-rs"
 name = "iceoryx_rs"
 
 [dependencies]
-ffi = { package = "iceoryx-sys", version = "0.0.13", path = "./iceoryx-sys" }
+ffi = { package = "iceoryx-sys", version = "0.1.0", path = "./iceoryx-sys" }
 thiserror = "1.0"
 
 [dev-dependencies]

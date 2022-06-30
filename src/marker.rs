@@ -7,14 +7,14 @@ use std::mem::MaybeUninit;
 /// # Safety
 ///
 /// This is a marker trait for types that can be transferred via shared memory.
-/// The types must satisfy the following conditions:
+/// The types must satisfy the following constraints:
 /// - no heap is used
 /// - the data structure is entirely contained in the shared memory - no pointers
 ///   to process local memory, no references to process local constructs, no dynamic allocators
 /// - the data structure has to be relocatable and therefore must not internally
 ///   use pointers/references
-/// - the type must not impl Drop; drop will not be called when the memory is released since the
-///   memory might be located in a shm segment without write access
+/// - the type must not implement `Drop`; `drop` will not be called when the memory is released
+///   since the memory might be located in a shm segment without write access to the subscriber
 /// In general, types that could implement the Copy trait fulfill these requirements.
 pub unsafe trait ShmSend {}
 

@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "iceoryx-sys"
-version = "0.0.13"
+version = "0.1.0"
 authors = ["elBoberido <k.hias@gmx.de>"]
 build = "build.rs"
 description = "Low level bindings for Eclipse iceoryx"

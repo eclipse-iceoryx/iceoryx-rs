@@ -69,7 +69,7 @@ fn multi_threaded_subscriber() -> Result<()> {
 
     let mut sample = publisher.loan()?;
 
-    const SEND_COUNTER: u32 = 42;
+    const SEND_COUNTER: u32 = 13;
     sample.counter = SEND_COUNTER;
     publisher.publish(sample);
 
@@ -114,6 +114,42 @@ fn publisher_loaning_but_not_publishing_sample() -> Result<()> {
     let sample_receiver = subscriber.get_sample_receiver(sample_receive_token);
 
     assert!(!sample_receiver.has_data());
+
+    publisher.stop_offer();
+    subscriber.unsubscribe(sample_receiver);
+
+    Ok(())
+}
+
+#[test]
+fn loaning_uninitialized_sample() -> Result<()> {
+    let _roudi = RouDiEnvironment::new();
+
+    Runtime::init("basic_pub_sub");
+
+    let (subscriber, sample_receive_token) =
+        SubscriberBuilder::<Counter>::new("Test", "BasicPubSub", "Counter")
+            .queue_capacity(5)
+            .create()?;
+
+    let publisher = PublisherBuilder::<Counter>::new("Test", "BasicPubSub", "Counter").create()?;
+
+    const SEND_COUNTER: u32 = 73;
+    let mut sample = publisher.loan_uninitialized()?;
+    let sample = unsafe {
+        (*sample.as_mut_ptr()).counter = SEND_COUNTER;
+        sample.assume_init()
+    };
+    publisher.publish(sample);
+
+    let sample_receiver = subscriber.get_sample_receiver(sample_receive_token);
+
+    assert!(sample_receiver.has_data());
+
+    match sample_receiver.take() {
+        Some(sample) => assert_eq!(sample.counter, SEND_COUNTER),
+        _ => return Err(anyhow!("Could not read sample")),
+    }
 
     publisher.stop_offer();
     subscriber.unsubscribe(sample_receiver);

@@ -15,7 +15,8 @@ Safe Rust bindings for [Eclipse iceoryx](https://github.com/eclipse-iceoryx/iceo
 2. [Examples](#examples)
     - [How to start RouDi](#how-to-start-roudi)
     - [Run the simple publisher and subscriber example](#run-the-simple-publisher-and-subscriber-example)
-3. [Limitations](#limitations)
+3. [API by Example](#api-by-example)
+4. [Limitations](#limitations)
 
 ## About
 
@@ -111,6 +112,155 @@ If `RouDi` is not running you get this output.
 ```
 
 After a waiting period, the application will shut down.
+
+## API by Example
+
+This is a brief API guide how to write a simple application.
+
+We start with `cargo new`.
+
+
+```console
+cargo new --bin hypnotoad
+```
+
+In the `Cargo.toml` manifest file we create two binaries and add the `iceoryx-rs` dependency.
+
+```toml
+[[bin]]
+name = "publisher"
+path = "src/publisher.rs"
+
+[[bin]]
+name = "subscriber"
+path = "src/subscriber.rs"
+
+[dependencies]
+iceoryx-rs = "0.1"
+```
+
+Now lets define the data we want to transmit and store them in `src/topic.rs`.
+
+```rust
+use iceoryx_rs::marker::ShmSend;
+
+#[repr(C)]
+#[derive(Default)]
+pub struct Counter {
+    pub counter: u32,
+}
+
+unsafe impl ShmSend for Counter {}
+```
+
+The `ShmSend` marker trait is used for types that can be transferred via shared memory and is similar
+to the `Send` marker trait which is used for types that can be transferred across thread boundaries.
+
+The types which implement `ShmSend` must satisfy the following constraints:
+ - no heap is used
+ - the data structure is entirely contained in the shared memory - no pointers
+   to process local memory, no references to process local constructs, no dynamic allocators
+ - the data structure has to be relocatable and therefore must not internally
+   use pointers/references
+ - the type must not implement `Drop`; `drop` will not be called when the memory is released since the
+   memory might be located in a shm segment without write access to the subscriber
+In general, types that could implement the Copy trait fulfill these requirements.
+
+The data type has also the `#[repr(C)]` attribute to be able to communicate with C and C++ applications
+and implements the `Default` trait. If the `Default` trait is not implemented, an `unsafe` API must
+be used to loan samples.
+
+Next is the `src/publisher.rs` file.
+
+```rust
+use iceoryx_rs::PublisherBuilder;
+use iceoryx_rs::Runtime;
+
+use std::error::Error;
+use std::thread;
+use std::time::Duration;
+
+mod topic;
+use topic::Counter;
+
+fn main() -> Result<(), Box<dyn Error>> {
+    Runtime::init("publisher");
+
+    let publisher = PublisherBuilder::<Counter>::new("all", "glory", "hypnotoad").create()?;
+
+    let mut counter = 0u32;
+    loop {
+        let mut sample = publisher.loan()?;
+        sample.counter = counter;
+        publisher.publish(sample);
+
+        println!("Send praise hypnotoad: {}", counter);
+        counter += 1;
+
+        thread::sleep(Duration::from_millis(1000));
+    }
+}
+```
+
+The first thing to do is the initialization of the iceoryx `Runtime`. This does the registration at the
+central `RouDi` daemon and takes the application name as parameter.
+
+Then the `Publisher` is created with the `PublisherBuilder` by specifying a service, event and instance ID.
+These can be arbitrary strings and are used to match publisher and subscriber.
+
+The publisher code is completed with a loop where once a second a sample is loaned and published.
+
+Finally we create the `src/subsriber.rs` file.
+
+```rust
+use iceoryx_rs::Runtime;
+use iceoryx_rs::SubscriberBuilder;
+
+use std::error::Error;
+use std::thread;
+use std::time::Duration;
+
+mod topic;
+use topic::Counter;
+
+fn main() -> Result<(), Box<dyn Error>> {
+    Runtime::init("subscriber");
+
+    let (subscriber, sample_receive_token) =
+        SubscriberBuilder::<Counter>::new("all", "glory", "hypnotoad")
+            .queue_capacity(5)
+            .create()?;
+
+    let sample_receiver = subscriber.get_sample_receiver(sample_receive_token);
+
+    loop {
+        if let Some(sample) = sample_receiver.take() {
+            println!("Receiving praise hypnotoad: {}", sample.counter);
+        } else {
+            thread::sleep(Duration::from_millis(100));
+        }
+    }
+}
+```
+
+Similar to the publisher application, the first thing to do is initializing the `Runtime`.
+
+The `SubscriberBuilder` is used to create a `Subscriber` and a `SampleReceiveToken` by specifying the
+same three service, event and instance ID strings as with the publisher.
+
+Before entering the loop, a `SampleReceiver` is obtained. In the loop we `take` samples until the
+receiver queue is empty and print the data we received. In case there is no data, the thread is
+suspended for one second and we try to take new samples.
+
+We are done. Lets run our code.
+
+1. Start `RouDi` with `find target -type f -wholename "*/iceoryx-install/bin/iox-roudi" -exec {} \;`
+2. Start the `publisher` with `cargo run publisher`
+2. Start the `subscriber` with `cargo run subscriber`
+
+Please have a look at the [examples](https://github.com/eclipse-iceoryx/iceoryx-rs/tree/master/examples)
+in the repository. It contains additional examples to show how uninitialized samples can be loaned and
+how the `wait_for_samples` method of the `SampleReceiver` can be used to get notified on new samples.
 
 ## Limitations
 

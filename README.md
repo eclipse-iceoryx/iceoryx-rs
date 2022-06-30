@@ -59,6 +59,9 @@ find target -type f -wholename "*/iceoryx-install/bin/iox-roudi" -exec {} \;
 
 ### Run the simple publisher and subscriber example
 
+The `publisher_simple` and `subscriber_simple` examples are demonstrating a typical inter-process communication
+use case.
+
 A good introductory example to demonstrate the inter-process communication are `publisher_simple`
 and `subscriber_simple`.
 

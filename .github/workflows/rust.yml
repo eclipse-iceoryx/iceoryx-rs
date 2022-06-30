@@ -59,7 +59,7 @@ jobs:
       with:
         name: ${{ runner.os }}-cargo-nextest
         path: ~/.cargo/bin/cargo-nextest
-        retention-days: 00
+        retention-days: 1
 
   grcov:
     needs: pre-flight-check
@@ -91,7 +91,7 @@ jobs:
       with:
         name: ${{ runner.os }}-grcov
         path: ~/.cargo/bin/grcov
-        retention-days: 00
+        retention-days: 1
 
   build-test:
     needs: cargo-nextest
@@ -217,7 +217,7 @@ jobs:
       with:
         name: coverage-html
         path: target/debug/coverage-html/*
-        retention-days: 00
+        retention-days: 90
     - name: Generate coverage report for Codecov
       run: |
         grcov                                               \

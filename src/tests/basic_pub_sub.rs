@@ -31,7 +31,7 @@ fn basic_pub_sub() -> Result<()> {
 
     let publisher = PublisherBuilder::<Counter>::new("Test", "BasicPubSub", "Counter").create()?;
 
-    let mut sample = publisher.allocate_sample()?;
+    let mut sample = publisher.loan()?;
 
     const SEND_COUNTER: u32 = 42;
     sample.counter = SEND_COUNTER;
@@ -39,9 +39,9 @@ fn basic_pub_sub() -> Result<()> {
 
     let sample_receiver = subscriber.get_sample_receiver(sample_receive_token);
 
-    assert!(sample_receiver.has_samples());
+    assert!(sample_receiver.has_data());
 
-    match sample_receiver.get_sample() {
+    match sample_receiver.take() {
         Some(sample) => assert_eq!(sample.counter, SEND_COUNTER),
         _ => return Err(anyhow!("Could not read sample")),
     }

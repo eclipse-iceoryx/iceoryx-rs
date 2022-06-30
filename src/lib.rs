@@ -21,7 +21,6 @@ mod sample_mut;
 pub use sample_mut::SampleMut;
 
 mod sample;
-pub use sample::Sample;
 pub use sample::SampleReceiverWaitState;
 
 pub mod st {

@@ -106,7 +106,7 @@ impl<T: ShmSend> Publisher<T> {
         self.ffi_pub.is_offered()
     }
 
-    pub fn stop(self) -> InactivePublisher<T> {
+    pub fn stop_offer(self) -> InactivePublisher<T> {
         self.ffi_pub.stop_offer();
         InactivePublisher::new_from_publisher(self)
     }
@@ -127,7 +127,7 @@ impl<T: ShmSend> Publisher<T> {
 }
 
 impl<T: ShmSend + Default> Publisher<T> {
-    pub fn allocate_sample(&self) -> Result<SampleMut<T>, IceoryxError> {
+    pub fn loan(&self) -> Result<SampleMut<T>, IceoryxError> {
         let mut data = self
             .ffi_pub
             .allocate_chunk::<T>()
@@ -147,7 +147,7 @@ impl<T: ShmSend + Default> Publisher<T> {
 }
 
 impl<T: ShmSend> Publisher<T> {
-    pub fn allocate_sample_uninitialized(&self) -> Result<SampleMut<MaybeUninit<T>>, IceoryxError> {
+    pub fn loan_uninitialized(&self) -> Result<SampleMut<MaybeUninit<T>>, IceoryxError> {
         let data = self
             .ffi_pub
             .allocate_chunk::<T>()

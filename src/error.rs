@@ -6,12 +6,12 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum IceoryxError {
-    #[error("could not allocate chunk")]
-    SampleAllocationFailed,
-    #[error("could not create publisher")]
+    #[error("Could not loan sample")]
+    LoanSampleFailed,
+    #[error("Could not create publisher")]
     PublisherCreationFailed,
-    #[error("could not create subscriber")]
+    #[error("Could not create subscriber")]
     SubscriberCreationFailed,
-    #[error("number of allowed chunks to hold is exhausted")]
-    TooManyChunksHoldInParallel,
+    #[error("Number of allowed samples to hold is exhausted")]
+    TooManySamplesHoldInParallel,
 }

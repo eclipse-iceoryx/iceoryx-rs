@@ -131,7 +131,7 @@ impl<T: ShmSend + Default> Publisher<T> {
         let mut data = self
             .ffi_pub
             .allocate_chunk::<T>()
-            .ok_or(IceoryxError::SampleAllocationFailed)?;
+            .ok_or(IceoryxError::LoanSampleFailed)?;
 
         // TDDO use this once 'new_uninit' is stabilized
         // let data = Box::write(data, T::default());
@@ -151,7 +151,7 @@ impl<T: ShmSend> Publisher<T> {
         let data = self
             .ffi_pub
             .allocate_chunk::<T>()
-            .ok_or(IceoryxError::SampleAllocationFailed)?;
+            .ok_or(IceoryxError::LoanSampleFailed)?;
 
         Ok(SampleMut {
             data: Some(data),

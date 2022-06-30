@@ -4,7 +4,7 @@ name = "iceoryx-sys"
 version = "0.0.13"
 authors = ["elBoberido <k.hias@gmx.de>"]
 build = "build.rs"
-description = "Low level bindings to Eclipse iceoryx"
+description = "Low level bindings for Eclipse iceoryx"
 keywords = [
     "zero-copy",
     "shared-memory",

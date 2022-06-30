@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut counter = 0u32;
     loop {
-        let mut sample = publisher.allocate_sample_uninitialized()?;
+        let mut sample = publisher.loan_uninitialized()?;
         let sample = unsafe {
             (*sample.as_mut_ptr()).counter = counter;
             sample.assume_init()

@@ -25,8 +25,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let sample_receiver = subscriber.get_sample_receiver(sample_receive_token);
 
     loop {
-        if sample_receiver.has_samples() {
-            while let Some(sample) = sample_receiver.get_sample() {
+        if sample_receiver.has_data() {
+            while let Some(sample) = sample_receiver.take() {
                 println!("Receiving: {}", sample.counter);
             }
         } else {

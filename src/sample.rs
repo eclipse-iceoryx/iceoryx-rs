@@ -57,7 +57,7 @@ impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
         if !self.ffi_sub.as_ref().is_condition_variable_set() {
             return SampleReceiverWaitState::Stopped;
         }
-        if self.has_samples() {
+        if self.has_data() {
             return SampleReceiverWaitState::SamplesAvailable;
         }
 
@@ -67,7 +67,7 @@ impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
             timeout.checked_sub(elapsed)
         } {
             self.condition_variable.timed_wait(remaining_timeout);
-            if self.has_samples() {
+            if self.has_data() {
                 return SampleReceiverWaitState::SamplesAvailable;
             }
         }
@@ -79,7 +79,7 @@ impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
         }
     }
 
-    pub fn has_samples(&self) -> bool {
+    pub fn has_data(&self) -> bool {
         self.ffi_sub.as_ref().has_chunks()
     }
 
@@ -87,7 +87,7 @@ impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
         self.ffi_sub.as_ref().clear();
     }
 
-    pub fn get_sample(&self) -> Option<Sample<T, S>> {
+    pub fn take(&self) -> Option<Sample<T, S>> {
         self.ffi_sub
             .as_ref()
             .get_chunk()

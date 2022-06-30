@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         loop {
             match sample_receiver.wait_for_samples(Duration::from_secs(2)) {
                 SampleReceiverWaitState::SamplesAvailable => {
-                    while let Some(sample) = sample_receiver.get_sample() {
+                    while let Some(sample) = sample_receiver.take() {
                         println!("Receiving: {}", sample.counter);
                     }
                 }

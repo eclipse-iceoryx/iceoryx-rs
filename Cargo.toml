@@ -8,7 +8,7 @@ edition = "2018"
 name = "iceoryx-rs"
 version = "0.0.13"
 authors = ["elBoberido <k.hias@gmx.de>"]
-description = "Idiomatic Rust bindings to Eclipse iceoryx - true zero-copy inter-process communication"
+description = "Safe Rust bindings to Eclipse iceoryx - true zero-copy inter-process communication"
 readme = "README.md"
 keywords = [
     "zero-copy",

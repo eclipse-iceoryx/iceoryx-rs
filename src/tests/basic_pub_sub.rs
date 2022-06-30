@@ -93,3 +93,30 @@ fn multi_threaded_subscriber() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn publisher_loaning_but_not_publishing_sample() -> Result<()> {
+    let _roudi = RouDiEnvironment::new();
+
+    Runtime::init("basic_pub_sub");
+
+    let (subscriber, sample_receive_token) =
+        SubscriberBuilder::<Counter>::new("Test", "BasicPubSub", "Counter")
+            .queue_capacity(5)
+            .create()?;
+
+    let publisher = PublisherBuilder::<Counter>::new("Test", "BasicPubSub", "Counter").create()?;
+
+    {
+        let _sample = publisher.loan()?;
+    }
+
+    let sample_receiver = subscriber.get_sample_receiver(sample_receive_token);
+
+    assert!(!sample_receiver.has_data());
+
+    publisher.stop_offer();
+    subscriber.unsubscribe(sample_receiver);
+
+    Ok(())
+}

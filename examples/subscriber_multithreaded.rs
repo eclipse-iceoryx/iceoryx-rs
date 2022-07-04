@@ -2,17 +2,15 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
+mod topic;
+use topic::Counter;
+
 use iceoryx_rs::Runtime;
 use iceoryx_rs::{SampleReceiverWaitState, SubscriberBuilder};
 
 use std::error::Error;
 use std::thread;
 use std::time::Duration;
-
-#[repr(C)]
-struct Counter {
-    counter: u32,
-}
 
 fn main() -> Result<(), Box<dyn Error>> {
     Runtime::init("subscriber_multithreaded");

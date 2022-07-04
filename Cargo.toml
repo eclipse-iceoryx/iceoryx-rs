@@ -23,6 +23,10 @@ repository = "https://github.com/eclipse-iceoryx/iceoryx-rs"
 [lib]
 name = "iceoryx_rs"
 
+[[example]]
+name = "topic"
+crate-type = ["staticlib"]
+
 [dependencies]
 ffi = { package = "iceoryx-sys", version = "0.1.0", path = "./iceoryx-sys" }
 thiserror = "1.0"

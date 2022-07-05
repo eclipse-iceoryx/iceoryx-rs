@@ -25,73 +25,39 @@ jobs:
     - name: Check formatting
       run: cargo fmt --check
 
-  # TODO refactor this to a custom action in .github/actions and also use it for the grcov job
   cargo-nextest:
     needs: pre-flight-check
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest] #Todo add windows-latest
-
     runs-on: ${{ matrix.os }}
     steps:
-    - name: Setup Rust
-      uses: actions-rs/toolchain@v1
+    - uses: actions/checkout@v3
+    - name: Build and cache cargo-nextest
+      uses: ./.github/actions/build-and-cache-rust-tool
       with:
-        toolchain: stable
-        profile: minimal
-        override: true
-    - name: Setup cache
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          target/
-        key: cache-1-${{ runner.os }}-cargo-nextest
-    - name: Install cargo-nextest
-      run: |
-        cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
-        cargo-nextest --version
-    - name: Upload cargo-nextest artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: ${{ runner.os }}-cargo-nextest
-        path: ~/.cargo/bin/cargo-nextest
-        retention-days: 1
+        rust-toolchain: stable
+        check-and-install-cmd: cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
+        print-version-cmd: cargo-nextest --version
+        cache-key: cache-1-${{ runner.os }}-cargo-nextest
+        artifact-path: ~/.cargo/bin/cargo-nextest
+        artifact-name: ${{ runner.os }}-cargo-nextest
 
   grcov:
     needs: pre-flight-check
     runs-on: ubuntu-latest
     steps:
-    - name: Setup Rust
-      uses: actions-rs/toolchain@v1
+    - uses: actions/checkout@v3
+    - name: Build and cache grcov
+      uses: ./.github/actions/build-and-cache-rust-tool
       with:
-        toolchain: nightly
-        profile: minimal
-        override: true
-        components: llvm-tools-preview
-    - name: Setup cache
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          target/
-        key: cache-1-${{ runner.os }}-grcov
-    - name: Install grcov
-      run: |
-        grcov --version > /dev/null || cargo install grcov
-        grcov --version
-    - name: Upload grcov artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: ${{ runner.os }}-grcov
-        path: ~/.cargo/bin/grcov
-        retention-days: 1
+        rust-toolchain: nightly
+        rust-components: llvm-tools-preview
+        check-and-install-cmd: grcov --version > /dev/null || cargo install grcov
+        print-version-cmd: grcov --version
+        cache-key: cache-1-${{ runner.os }}-grcov
+        artifact-path: ~/.cargo/bin/grcov
+        artifact-name: ${{ runner.os }}-grcov
 
   build-test:
     needs: cargo-nextest

@@ -81,6 +81,12 @@ jobs:
         profile: minimal
         override: true
         components: clippy
+    - name: Create version_info file
+      run: |
+        rustc --version > version_info
+        cargo --version >> version_info
+        cargo clippy --version >> version_info
+        cat version_info
     - name: Setup cache
       uses: actions/cache@v2
       with:
@@ -90,7 +96,7 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           target/
-        key: cache-1-${{ runner.os }}-toolchain-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.toml', '**/build.rs') }}
+        key: cache-1-${{ runner.os }}-toolchain-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.toml', '**/build.rs', 'version_info') }}
     - name: Download cargo-nextest artifact
       uses: actions/download-artifact@v3
       with:
@@ -125,6 +131,11 @@ jobs:
         profile: minimal
         override: true
         components: llvm-tools-preview
+    - name: Create version_info file
+      run: |
+        rustc --version > version_info
+        cargo --version >> version_info
+        cat version_info
     - name: Setup cache
       uses: actions/cache@v2
       with:
@@ -134,7 +145,7 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           target/
-        key: coverage-llvm-tools-preview-cache-1-${{ runner.os }}-toolchain-nightly-${{ hashFiles('**/Cargo.toml', '**/build.rs') }}
+        key: coverage-llvm-tools-preview-cache-1-${{ runner.os }}-toolchain-nightly-${{ hashFiles('**/Cargo.toml', '**/build.rs', 'version_info') }}
     - name: Download artifact cargo-nextest
       uses: actions/download-artifact@v3
       with:

@@ -33,6 +33,12 @@ runs:
         profile: minimal
         override: true
         components: ${{ inputs.rust-components }}
+    - name: Create version_info file
+      run: |
+        rustc --version > version_info
+        cargo --version >> version_info
+        cat version_info
+      shell: bash
     - name: Setup cache
       uses: actions/cache@v2
       with:

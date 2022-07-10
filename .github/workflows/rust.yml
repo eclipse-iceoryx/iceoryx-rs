@@ -146,6 +146,11 @@ jobs:
           ~/.cargo/git/db/
           target/
         key: coverage-llvm-tools-preview-cache-1-${{ runner.os }}-toolchain-nightly-${{ hashFiles('**/Cargo.toml', '**/build.rs', 'version_info') }}
+    - name: Remove outdated files from cache
+      run: |
+         find . -type f -wholename "**/lcov.info" -exec rm {} \;
+         find . -type f -wholename "**/*.profraw" -exec rm {} \;
+         rm -rf target/debug/coverage-html
     - name: Download artifact cargo-nextest
       uses: actions/download-artifact@v3
       with:

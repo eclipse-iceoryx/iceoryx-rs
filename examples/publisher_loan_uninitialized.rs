@@ -13,7 +13,7 @@ use std::thread;
 use std::time::Duration;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    Runtime::init("publisher_simple");
+    Runtime::init("publisher_loan_uninitialized");
 
     let publisher = PublisherBuilder::<Counter>::new("Radar", "FrontLeft", "Counter").create()?;
 

@@ -37,6 +37,8 @@ unsafe impl ShmSend for usize {}
 
 unsafe impl ShmSend for char {}
 
+unsafe impl<T: ShmSend> ShmSend for [T] {}
+
 unsafe impl<T: ShmSend, const N: usize> ShmSend for [T; N] {}
 
 unsafe impl<T: ShmSend> ShmSend for Option<T> {}

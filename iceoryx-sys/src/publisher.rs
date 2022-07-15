@@ -4,8 +4,9 @@
 
 use crate::PublisherOptions;
 
-use std::ffi::CString;
+use std::ffi::{c_void, CString};
 use std::mem::MaybeUninit;
+use std::slice::from_raw_parts_mut;
 
 cpp! {{
     #include "iceoryx_posh/internal/popo/ports/publisher_port_user.hpp"
@@ -105,20 +106,11 @@ impl Publisher {
         }
     }
 
-    pub fn allocate_chunk<T>(&self) -> Option<Box<MaybeUninit<T>>> {
-        let payload_size = std::mem::size_of::<T>() as u32;
+    pub fn try_allocate<T>(&self) -> Option<Box<MaybeUninit<T>>> {
+        let size = std::mem::size_of::<T>() as u32;
+        let align = std::mem::align_of::<T>() as u32;
         unsafe {
-            let chunk = cpp!([self as "PublisherPortUser*", payload_size as "uint32_t"] -> *mut std::ffi::c_void as "void*" {
-                auto allocResult = self->tryAllocateChunk(payload_size,
-                                                          iox::CHUNK_DEFAULT_USER_PAYLOAD_ALIGNMENT,
-                                                          iox::CHUNK_NO_USER_HEADER_SIZE,
-                                                          iox::CHUNK_NO_USER_HEADER_ALIGNMENT);
-                if (allocResult.has_error()) {
-                    return nullptr;
-                } else {
-                    return allocResult.value()->userPayload();
-                }
-            });
+            let chunk = self.try_allocate_chunk(size, align);
 
             if !chunk.is_null() {
                 Some(Box::from_raw(chunk as *mut MaybeUninit<T>))
@@ -128,9 +120,42 @@ impl Publisher {
         }
     }
 
-    pub fn free_chunk<T>(&self, chunk: Box<T>) {
+    pub fn try_allocate_slice<T>(&self, len: u32, align: u32) -> Option<Box<[MaybeUninit<T>]>> {
         unsafe {
-            let chunk = Box::into_raw(chunk);
+            if align < std::mem::align_of::<T>() as u32 {
+                return None;
+            }
+
+            let size = len * std::mem::size_of::<T>() as u32;
+            let chunk = self.try_allocate_chunk(size, align);
+
+            if !chunk.is_null() {
+                let chunk = from_raw_parts_mut(chunk as *mut MaybeUninit<T>, len as usize);
+                Some(Box::from_raw(chunk))
+            } else {
+                None
+            }
+        }
+    }
+
+    unsafe fn try_allocate_chunk(&self, size: u32, align: u32) -> *mut c_void {
+        let chunk = cpp!([self as "PublisherPortUser*", size as "uint32_t", align as "uint32_t"] -> *mut std::ffi::c_void as "void*" {
+            auto allocResult = self->tryAllocateChunk(size,
+                                                      align,
+                                                      iox::CHUNK_NO_USER_HEADER_SIZE,
+                                                      iox::CHUNK_NO_USER_HEADER_ALIGNMENT);
+            if (allocResult.has_error()) {
+                return nullptr;
+            } else {
+                return allocResult.value()->userPayload();
+            }
+        });
+        chunk
+    }
+
+    pub fn release<T: ?Sized>(&self, chunk: Box<T>) {
+        unsafe {
+            let chunk = Box::into_raw(chunk) as *const c_void;
             cpp!([self as "PublisherPortUser*", chunk as "void*"] {
                 auto header = iox::mepoo::ChunkHeader::fromUserPayload(chunk);
                 self->releaseChunk(header);
@@ -138,9 +163,9 @@ impl Publisher {
         }
     }
 
-    pub fn send_chunk<T>(&self, chunk: Box<T>) {
+    pub fn send<T: ?Sized>(&self, chunk: Box<T>) {
+        let chunk = Box::into_raw(chunk) as *const c_void;
         unsafe {
-            let chunk = Box::into_raw(chunk);
             cpp!([self as "PublisherPortUser*", chunk as "void*"] {
                 auto header = iox::mepoo::ChunkHeader::fromUserPayload(chunk);
                 self->sendChunk(header);

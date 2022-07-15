@@ -10,7 +10,7 @@ use crate::IceoryxError;
 use std::marker::PhantomData;
 use std::mem::MaybeUninit;
 
-pub struct PublisherBuilder<'a, T: ShmSend> {
+pub struct PublisherBuilder<'a, T: ShmSend + ?Sized> {
     service: &'a str,
     instance: &'a str,
     event: &'a str,
@@ -18,7 +18,7 @@ pub struct PublisherBuilder<'a, T: ShmSend> {
     phantom: PhantomData<T>,
 }
 
-impl<'a, T: ShmSend> PublisherBuilder<'a, T> {
+impl<'a, T: ShmSend + ?Sized> PublisherBuilder<'a, T> {
     pub fn new(service: &'a str, instance: &'a str, event: &'a str) -> Self {
         Self {
             service,
@@ -70,12 +70,12 @@ impl<'a, T: ShmSend> PublisherBuilder<'a, T> {
     }
 }
 
-pub struct InactivePublisher<T: ShmSend> {
+pub struct InactivePublisher<T: ShmSend + ?Sized> {
     ffi_pub: Box<ffi::Publisher>,
     phantom: PhantomData<T>,
 }
 
-impl<T: ShmSend> InactivePublisher<T> {
+impl<T: ShmSend + ?Sized> InactivePublisher<T> {
     fn new_from_publisher(publisher: Publisher<T>) -> Self {
         Self {
             ffi_pub: publisher.ffi_pub,
@@ -89,12 +89,12 @@ impl<T: ShmSend> InactivePublisher<T> {
     }
 }
 
-pub struct Publisher<T: ShmSend> {
+pub struct Publisher<T: ShmSend + ?Sized> {
     ffi_pub: Box<ffi::Publisher>,
     phantom: PhantomData<T>,
 }
 
-impl<T: ShmSend> Publisher<T> {
+impl<T: ShmSend + ?Sized> Publisher<T> {
     fn new_from_inactive_publisher(publisher: InactivePublisher<T>) -> Self {
         Self {
             ffi_pub: publisher.ffi_pub,
@@ -117,32 +117,23 @@ impl<T: ShmSend> Publisher<T> {
 
     pub fn publish(&self, mut sample: SampleMut<T>) {
         if let Some(chunk) = sample.data.take() {
-            sample.service.ffi_pub.send_chunk(chunk)
+            sample.publisher.ffi_pub.send(chunk)
         }
     }
 
     pub(super) fn release_chunk(&self, chunk: Box<T>) {
-        self.ffi_pub.free_chunk(chunk);
+        self.ffi_pub.release(chunk);
     }
 }
 
 impl<T: ShmSend + Default> Publisher<T> {
     pub fn loan(&self) -> Result<SampleMut<T>, IceoryxError> {
-        let mut data = self
-            .ffi_pub
-            .allocate_chunk::<T>()
-            .ok_or(IceoryxError::LoanSampleFailed)?;
+        let mut sample = self.loan_uninitialized()?;
 
-        // TDDO use this once 'new_uninit' is stabilized
-        // let data = Box::write(data, T::default());
-        // until then, the transmute is not nice but safe since MaybeUninit has the same layout as the inner type
-        (*data).write(T::default());
-        let data = unsafe { std::mem::transmute::<Box<MaybeUninit<T>>, Box<T>>(data) };
-
-        Ok(SampleMut {
-            data: Some(data),
-            service: self,
-        })
+        unsafe {
+            sample.as_mut_ptr().write(T::default());
+            Ok(sample.assume_init())
+        }
     }
 }
 
@@ -150,14 +141,73 @@ impl<T: ShmSend> Publisher<T> {
     pub fn loan_uninitialized(&self) -> Result<SampleMut<MaybeUninit<T>>, IceoryxError> {
         let data = self
             .ffi_pub
-            .allocate_chunk::<T>()
+            .try_allocate::<T>()
             .ok_or(IceoryxError::LoanSampleFailed)?;
 
         Ok(SampleMut {
             data: Some(data),
-            service: unsafe {
+            publisher: unsafe {
                 // the transmute is not nice but save since MaybeUninit has the same layout as the inner type
                 std::mem::transmute::<&Publisher<T>, &Publisher<MaybeUninit<T>>>(self)
+            },
+        })
+    }
+}
+
+impl<T: ShmSend + Default> Publisher<[T]> {
+    pub fn loan_slice(&self, len: usize) -> Result<SampleMut<[T]>, IceoryxError> {
+        self.loan_slice_with_alignment(len, std::mem::align_of::<T>())
+    }
+
+    pub fn loan_slice_with_alignment(
+        &self,
+        len: usize,
+        align: usize,
+    ) -> Result<SampleMut<[T]>, IceoryxError> {
+        let mut sample = self.loan_uninit_slice_with_alignment(len, align)?;
+
+        unsafe {
+            // TODO use `MaybeUninit::slice_assume_init_mut` once it is stabilized
+            std::mem::transmute::<&mut [MaybeUninit<T>], &mut [T]>(
+                sample.data.as_mut().expect("valid sample"),
+            )
+            .fill_with(|| T::default());
+
+            Ok(sample.assume_init())
+        }
+    }
+}
+
+impl<T: ShmSend> Publisher<[T]> {
+    pub fn loan_uninit_slice(
+        &self,
+        len: usize,
+    ) -> Result<SampleMut<[MaybeUninit<T>]>, IceoryxError> {
+        self.loan_uninit_slice_with_alignment(len, std::mem::align_of::<T>())
+    }
+
+    pub fn loan_uninit_slice_with_alignment(
+        &self,
+        len: usize,
+        align: usize,
+    ) -> Result<SampleMut<[MaybeUninit<T>]>, IceoryxError> {
+        if align < std::mem::align_of::<T>() {
+            return Err(IceoryxError::InvalidAlignment {
+                requested: align,
+                min_required: std::mem::align_of::<T>(),
+            });
+        }
+
+        let data = self
+            .ffi_pub
+            .try_allocate_slice(len as u32, align as u32)
+            .ok_or(IceoryxError::LoanSampleFailed)?;
+
+        Ok(SampleMut {
+            data: Some(data),
+            publisher: unsafe {
+                // the transmute is not nice but save since MaybeUninit has the same layout as the inner type
+                std::mem::transmute::<&Publisher<[T]>, &Publisher<[MaybeUninit<T>]>>(self)
             },
         })
     }

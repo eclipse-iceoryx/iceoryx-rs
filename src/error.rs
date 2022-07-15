@@ -8,6 +8,11 @@ use thiserror::Error;
 pub enum IceoryxError {
     #[error("Could not loan sample")]
     LoanSampleFailed,
+    #[error("Invalid alignment! Requested: {requested}; Min required: {min_required} ")]
+    InvalidAlignment {
+        requested: usize,
+        min_required: usize,
+    },
     #[error("Could not create publisher")]
     PublisherCreationFailed,
     #[error("Could not create subscriber")]

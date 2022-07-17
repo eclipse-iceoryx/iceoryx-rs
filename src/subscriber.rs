@@ -10,7 +10,7 @@ use crate::SubscribeState;
 
 use std::marker::PhantomData;
 
-pub struct SubscriberBuilder<'a, T> {
+pub struct SubscriberBuilder<'a, T: ?Sized> {
     service: &'a str,
     instance: &'a str,
     event: &'a str,
@@ -18,7 +18,7 @@ pub struct SubscriberBuilder<'a, T> {
     phantom: PhantomData<T>,
 }
 
-impl<'a, T> SubscriberBuilder<'a, T> {
+impl<'a, T: ?Sized> SubscriberBuilder<'a, T> {
     pub fn new(service: &'a str, instance: &'a str, event: &'a str) -> Self {
         Self {
             service,
@@ -97,12 +97,12 @@ impl<'a, T> SubscriberBuilder<'a, T> {
 
 pub struct SampleReceiverToken {}
 
-pub struct InactiveSubscriber<T> {
+pub struct InactiveSubscriber<T: ?Sized> {
     ffi_sub: Box<ffi::Subscriber>,
     phantom: PhantomData<T>,
 }
 
-impl<T> InactiveSubscriber<T> {
+impl<T: ?Sized> InactiveSubscriber<T> {
     fn from_ffi(ffi_sub: Box<ffi::Subscriber>) -> Self {
         Self {
             ffi_sub,
@@ -131,12 +131,12 @@ impl<T> InactiveSubscriber<T> {
     }
 }
 
-pub struct Subscriber<T, S: ffi::SubscriberStrongRef> {
+pub struct Subscriber<T: ?Sized, S: ffi::SubscriberStrongRef> {
     ffi_sub: S,
     phantom: PhantomData<T>,
 }
 
-impl<T, S: ffi::SubscriberStrongRef> Subscriber<T, S> {
+impl<T: ?Sized, S: ffi::SubscriberStrongRef> Subscriber<T, S> {
     fn new_from_ffi(ffi_sub: Box<ffi::Subscriber>) -> Self {
         Subscriber {
             ffi_sub: S::new(ffi_sub),

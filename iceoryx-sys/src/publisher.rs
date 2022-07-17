@@ -5,8 +5,6 @@
 use crate::PublisherOptions;
 
 use std::ffi::{c_void, CString};
-use std::mem::MaybeUninit;
-use std::slice::from_raw_parts_mut;
 
 cpp! {{
     #include "iceoryx_posh/internal/popo/ports/publisher_port_user.hpp"
@@ -106,21 +104,21 @@ impl Publisher {
         }
     }
 
-    pub fn try_allocate<T>(&self) -> Option<Box<MaybeUninit<T>>> {
+    pub fn try_allocate<T>(&self) -> Option<*mut T> {
         let size = std::mem::size_of::<T>() as u32;
         let align = std::mem::align_of::<T>() as u32;
         unsafe {
             let chunk = self.try_allocate_chunk(size, align);
 
             if !chunk.is_null() {
-                Some(Box::from_raw(chunk as *mut MaybeUninit<T>))
+                Some(chunk as *mut T)
             } else {
                 None
             }
         }
     }
 
-    pub fn try_allocate_slice<T>(&self, len: u32, align: u32) -> Option<Box<[MaybeUninit<T>]>> {
+    pub fn try_allocate_slice<T>(&self, len: u32, align: u32) -> Option<*mut T> {
         unsafe {
             if align < std::mem::align_of::<T>() as u32 {
                 return None;
@@ -130,8 +128,7 @@ impl Publisher {
             let chunk = self.try_allocate_chunk(size, align);
 
             if !chunk.is_null() {
-                let chunk = from_raw_parts_mut(chunk as *mut MaybeUninit<T>, len as usize);
-                Some(Box::from_raw(chunk))
+                Some(chunk as *mut T)
             } else {
                 None
             }
@@ -153,9 +150,9 @@ impl Publisher {
         chunk
     }
 
-    pub fn release<T: ?Sized>(&self, chunk: Box<T>) {
+    pub fn release<T: ?Sized>(&self, chunk: *mut T) {
         unsafe {
-            let chunk = Box::into_raw(chunk) as *const c_void;
+            let chunk = chunk as *const c_void;
             cpp!([self as "PublisherPortUser*", chunk as "void*"] {
                 auto header = iox::mepoo::ChunkHeader::fromUserPayload(chunk);
                 self->releaseChunk(header);
@@ -163,8 +160,8 @@ impl Publisher {
         }
     }
 
-    pub fn send<T: ?Sized>(&self, chunk: Box<T>) {
-        let chunk = Box::into_raw(chunk) as *const c_void;
+    pub fn send<T: ?Sized>(&self, chunk: *mut T) {
+        let chunk = chunk as *const c_void;
         unsafe {
             cpp!([self as "PublisherPortUser*", chunk as "void*"] {
                 auto header = iox::mepoo::ChunkHeader::fromUserPayload(chunk);

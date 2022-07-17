@@ -128,7 +128,7 @@ impl<T: ShmSend + ?Sized> Publisher<T> {
 
 impl<T: ShmSend + Default> Publisher<T> {
     pub fn loan(&self) -> Result<SampleMut<T>, IceoryxError> {
-        let mut sample = self.loan_uninitialized()?;
+        let mut sample = self.loan_uninit()?;
 
         unsafe {
             sample.as_mut_ptr().write(T::default());
@@ -138,7 +138,7 @@ impl<T: ShmSend + Default> Publisher<T> {
 }
 
 impl<T: ShmSend> Publisher<T> {
-    pub fn loan_uninitialized(&self) -> Result<SampleMut<MaybeUninit<T>>, IceoryxError> {
+    pub fn loan_uninit(&self) -> Result<SampleMut<MaybeUninit<T>>, IceoryxError> {
         let data = self
             .ffi_pub
             .try_allocate::<T>()

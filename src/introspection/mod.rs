@@ -2,6 +2,8 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
+//! Introspection related structs and enums
+
 mod memory;
 pub use memory::MemPoolIntrospection;
 

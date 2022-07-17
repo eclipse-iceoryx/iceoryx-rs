@@ -15,9 +15,15 @@ cpp! {{
     using iox::runtime::PoshRuntime;
 }}
 
+/// The runtime that is needed for each application to communicate with the `RouDi` daemon
 pub struct Runtime {}
 
 impl Runtime {
+    /// With this associated function the application registers at `RouDi`
+    ///
+    /// The call to this function is required in order to create publisher and subscriber and must be done early
+    /// in the application startup. There cannot be two application with the same `app_name` be registered
+    /// simultaneously at `RouDi`.
     pub fn init(app_name: &str) {
         let app_name = CString::new(app_name).expect("CString::new failed");
         let app_name = app_name.as_ptr();

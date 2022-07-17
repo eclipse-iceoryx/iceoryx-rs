@@ -5,17 +5,18 @@
 use crate::SubscribeState;
 
 use std::marker::PhantomData;
+use std::slice::from_raw_parts_mut;
 use std::time::{Duration, SystemTime};
 
 use std::ops::Deref;
 
 //TODO impl debug for Sample with T: Debug
-pub struct Sample<T, S: ffi::SubscriberStrongRef> {
+pub struct Sample<T: ?Sized, S: ffi::SubscriberStrongRef> {
     data: Option<Box<T>>,
     ffi_sub: S,
 }
 
-impl<T, S: ffi::SubscriberStrongRef> Deref for Sample<T, S> {
+impl<T: ?Sized, S: ffi::SubscriberStrongRef> Deref for Sample<T, S> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -24,7 +25,7 @@ impl<T, S: ffi::SubscriberStrongRef> Deref for Sample<T, S> {
     }
 }
 
-impl<T, S: ffi::SubscriberStrongRef> Drop for Sample<T, S> {
+impl<T: ?Sized, S: ffi::SubscriberStrongRef> Drop for Sample<T, S> {
     fn drop(&mut self) {
         if let Some(chunk) = self.data.take() {
             self.ffi_sub.as_ref().release_chunk(Box::into_raw(chunk));
@@ -32,13 +33,13 @@ impl<T, S: ffi::SubscriberStrongRef> Drop for Sample<T, S> {
     }
 }
 
-pub struct SampleReceiver<T, S: ffi::SubscriberStrongRef> {
+pub struct SampleReceiver<T: ?Sized, S: ffi::SubscriberStrongRef> {
     ffi_sub: S,
     pub condition_variable: Box<ffi::ConditionVariable>,
     phantom: PhantomData<T>,
 }
 
-impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
+impl<T: ?Sized, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
     pub(super) fn new(ffi_sub: S) -> Self {
         let condition_variable = ffi::ConditionVariable::new();
         ffi_sub.as_ref().set_condition_variable(&condition_variable);
@@ -87,7 +88,9 @@ impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
     pub fn clear(&self) {
         self.ffi_sub.as_ref().clear();
     }
+}
 
+impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
     pub fn take(&self) -> Option<Sample<T, S>> {
         self.ffi_sub.as_ref().get_chunk().map(|data: *const T| {
             // this is safe since sample only implements `Deref` and not `DerefMut`
@@ -100,7 +103,36 @@ impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
     }
 }
 
-impl<T, S: ffi::SubscriberStrongRef> Drop for SampleReceiver<T, S> {
+impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<[T], S> {
+    pub fn take(&self) -> Option<Sample<[T], S>> {
+        self.ffi_sub
+            .as_ref()
+            .get_chunk()
+            .and_then(|data: *const T| {
+                let payload_size = self.ffi_sub.as_ref().get_user_payload_size(data);
+                let len = payload_size as usize / std::mem::size_of::<T>();
+
+                if payload_size as usize % std::mem::size_of::<T>() == 0 {
+                    let data = unsafe {
+                        // this is safe since sample only implements `Deref` and not `DerefMut`
+                        let data = from_raw_parts_mut(data as *mut T, len as usize);
+                        Box::from_raw(data)
+                    };
+
+                    Some(Sample::<[T], S> {
+                        data: Some(data),
+                        ffi_sub: self.ffi_sub.clone(),
+                    })
+                } else {
+                    // TODO return Result<Option<T>>
+                    self.ffi_sub.as_ref().release_chunk(data);
+                    None
+                }
+            })
+    }
+}
+
+impl<T: ?Sized, S: ffi::SubscriberStrongRef> Drop for SampleReceiver<T, S> {
     fn drop(&mut self) {
         self.ffi_sub.as_ref().unset_condition_variable();
         self.ffi_sub.as_ref().unsubscribe();

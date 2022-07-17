@@ -246,7 +246,7 @@ impl Subscriber {
 
     pub fn get_chunk<T>(&self) -> Option<*const T> {
         unsafe {
-            let chunk = cpp!([self as "SubscriberPortUser*"] -> *const std::ffi::c_void as "const void*" {
+            let payload = cpp!([self as "SubscriberPortUser*"] -> *const std::ffi::c_void as "const void*" {
                 auto getChunkResult = self->tryGetChunk();
 
                 if (getChunkResult.has_error()) {
@@ -256,19 +256,29 @@ impl Subscriber {
                 return getChunkResult.value()->userPayload();
             });
 
-            if !chunk.is_null() {
-                Some(chunk as *const T)
+            if !payload.is_null() {
+                Some(payload as *const T)
             } else {
                 None
             }
         }
     }
 
-    pub fn release_chunk<T>(&self, chunk: *const T) {
+    pub fn get_user_payload_size<T>(&self, payload: *const T) -> u32 {
         unsafe {
-            let chunk = chunk as *const c_void;
-            cpp!([self as "SubscriberPortUser*", chunk as "void*"] {
-                auto header = iox::mepoo::ChunkHeader::fromUserPayload(chunk);
+            let payload = payload as *const c_void;
+            cpp!([payload as "void*"] -> u32 as "uint32_t" {
+                auto header = iox::mepoo::ChunkHeader::fromUserPayload(payload);
+                return header->userPayloadSize();
+            })
+        }
+    }
+
+    pub fn release_chunk<T: ?Sized>(&self, payload: *const T) {
+        unsafe {
+            let payload = payload as *const c_void;
+            cpp!([self as "SubscriberPortUser*", payload as "void*"] {
+                auto header = iox::mepoo::ChunkHeader::fromUserPayload(payload);
                 self->releaseChunk(header);
             });
         }

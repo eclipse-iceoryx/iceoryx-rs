@@ -8,6 +8,7 @@ use crate::marker::ShmSend;
 use std::mem::MaybeUninit;
 use std::ops::{Deref, DerefMut};
 
+/// A mutable sample owned by a single publisher
 pub struct SampleMut<'a, T: ShmSend + ?Sized> {
     pub(super) data: Option<Box<T>>,
     pub(super) publisher: &'a Publisher<T>,
@@ -38,6 +39,8 @@ impl<'a, T: ShmSend + ?Sized> Drop for SampleMut<'a, T> {
 }
 
 impl<'a, T: ShmSend> SampleMut<'a, MaybeUninit<T>> {
+    /// Extracts the value of `MaybeUninit<T>` container and labels the sample as initialized
+    ///
     /// # Safety
     ///
     /// The caller must ensure that `MaybeUninit<T>` really is initialized. Calling this when
@@ -61,6 +64,8 @@ impl<'a, T: ShmSend> SampleMut<'a, MaybeUninit<T>> {
 }
 
 impl<'a, T: ShmSend> SampleMut<'a, [MaybeUninit<T>]> {
+    /// Extracts the value of `MaybeUninit<T>` container and labels the sample as initialized
+    ///
     /// # Safety
     ///
     /// The caller must ensure that `MaybeUninit<T>` really is initialized. Calling this when
@@ -84,10 +89,13 @@ impl<'a, T: ShmSend> SampleMut<'a, [MaybeUninit<T>]> {
 }
 
 impl<'a> SampleMut<'a, [MaybeUninit<u8>]> {
+    /// Get a mutable slice to the elements
+    ///
     /// # Safety
     ///
     /// It is safe to write to the slice but reading is undefined behaviour.
-    /// The main purpose of this method is to be used in combination with the `bytes::BufMut` trait.
+    /// The main purpose of this method is to be used in combination with the `BufMut` trait of the
+    /// [bytes](https://crates.io/crates/bytes) crate.
     pub unsafe fn slice_assume_init_mut(&mut self) -> &mut [u8] {
         // TODO check if `MaybeUninit::slice_assume_init_mut` can be used once it is stabilized;
         // it might not be possible since current documentation labels the usage as undefined behavior
@@ -98,6 +106,9 @@ impl<'a> SampleMut<'a, [MaybeUninit<u8>]> {
         )
     }
 
+    /// Get a mutable reference to an uninitialized T
+    ///
+    /// If the size and alignment of T do not match with the alignment of the underlying buffer, None is returned.
     pub fn try_as_uninit<T: ShmSend>(&mut self) -> Option<&mut MaybeUninit<T>> {
         unsafe {
             let data = self.data.as_mut().unwrap_unchecked();

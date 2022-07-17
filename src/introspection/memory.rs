@@ -8,11 +8,13 @@ use crate::{InactiveSubscriber, SubscriberBuilder};
 
 use std::marker::PhantomData;
 
+/// Introspection for used memory and shared memory segments
 pub struct MemPoolIntrospection {
     phantom: PhantomData<()>,
 }
 
 impl MemPoolIntrospection {
+    /// Creates a subscriber for the MemPool introspection
     #[allow(clippy::new_ret_no_self)]
     pub fn new() -> Result<InactiveSubscriber<MemPoolIntrospectionTopic>, IceoryxError> {
         SubscriberBuilder::<MemPoolIntrospectionTopic>::new("Introspection", "RouDi_ID", "MemPool")

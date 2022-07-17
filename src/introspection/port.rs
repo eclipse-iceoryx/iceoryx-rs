@@ -8,11 +8,13 @@ use crate::{InactiveSubscriber, SubscriberBuilder};
 
 use std::marker::PhantomData;
 
+/// Introspection for publisher and subscriber ports
 pub struct PortIntrospection {
     phantom: PhantomData<()>,
 }
 
 impl PortIntrospection {
+    /// Creates a subscriber for the port introspection
     #[allow(clippy::new_ret_no_self)]
     pub fn new() -> Result<InactiveSubscriber<PortIntrospectionTopic>, IceoryxError> {
         SubscriberBuilder::<PortIntrospectionTopic>::new("Introspection", "RouDi_ID", "Port")

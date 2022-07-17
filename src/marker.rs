@@ -2,11 +2,17 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
+//! Marker traits for iceoryx-rs
+
 use std::mem::MaybeUninit;
 
+/// This is a marker trait for types that can be transferred via shared memory.
+///
+/// The `ShmSend` marker trait is similar to the `Send` marker trait which is used for types that
+/// can be transferred across thread boundaries. `ShmSend` marks types for a transfer across process boundaries.
+///
 /// # Safety
 ///
-/// This is a marker trait for types that can be transferred via shared memory.
 /// The types must satisfy the following constraints:
 /// - no heap is used
 /// - the data structure is entirely contained in the shared memory - no pointers
@@ -16,6 +22,8 @@ use std::mem::MaybeUninit;
 /// - the type must not implement `Drop`; `drop` will not be called when the memory is released
 ///   since the memory might be located in a shm segment without write access to the subscriber
 /// In general, types that could implement the Copy trait fulfill these requirements.
+///
+/// For interoperability with C and C++ the types should also be `#[repr(C)]`.
 pub unsafe trait ShmSend {}
 
 unsafe impl ShmSend for bool {}

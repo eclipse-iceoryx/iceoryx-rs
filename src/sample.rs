@@ -12,6 +12,7 @@ use std::time::{Duration, SystemTime};
 use std::ops::Deref;
 
 //TODO impl debug for Sample with T: Debug
+/// An immutable sample shared between multiple subscriber
 pub struct Sample<T: ?Sized, S: ffi::SubscriberStrongRef> {
     data: Option<Box<T>>,
     ffi_sub: S,
@@ -35,6 +36,10 @@ impl<T: ?Sized, S: ffi::SubscriberStrongRef> Drop for Sample<T, S> {
 }
 
 impl<S: ffi::SubscriberStrongRef> Sample<[u8], S> {
+    /// Get a reference to a T
+    ///
+    /// If the size and alignment of T do not match with the alignment of the underlying buffer, None is returned.
+    ///
     /// # Safety
     ///
     /// The caller must ensure that the [u8] is actually a T. It is undefined behavior if the underlying data is not a T.
@@ -55,9 +60,10 @@ impl<S: ffi::SubscriberStrongRef> Sample<[u8], S> {
     }
 }
 
+/// Access to the sample receiver queue of the subscriber
 pub struct SampleReceiver<T: ?Sized, S: ffi::SubscriberStrongRef> {
     ffi_sub: S,
-    pub condition_variable: Box<ffi::ConditionVariable>,
+    condition_variable: Box<ffi::ConditionVariable>,
     phantom: PhantomData<T>,
 }
 
@@ -73,10 +79,19 @@ impl<T: ?Sized, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
         }
     }
 
+    /// The current subscription state of the corresponding subscriber
+    ///
+    /// After `SubscriberBuilder::create` this will immediately be [`SubscribeState::Subscribed`] but after
+    /// `InactiveSubscriber::subscribe` it might take up to 50 milliseconds until `RouDi` runs its
+    /// discovery loop and the subscriber will be subscribed to the publisher.
     pub fn subscription_state(&self) -> SubscribeState {
         self.ffi_sub.as_ref().subscription_state()
     }
 
+    /// Blocking wait for samples
+    ///
+    /// This method unblock when either new samples are available, the timeout duration elapsed or the
+    /// `SampleReceiver` was stopped.
     pub fn wait_for_samples(&self, timeout: Duration) -> SampleReceiverWaitState {
         if !self.ffi_sub.as_ref().is_condition_variable_set() {
             return SampleReceiverWaitState::Stopped;
@@ -103,16 +118,21 @@ impl<T: ?Sized, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
         }
     }
 
+    /// Checks it there are samples in the receiver queue
     pub fn has_data(&self) -> bool {
         self.ffi_sub.as_ref().has_chunks()
     }
 
+    /// Clears the receiver queue and release all the samples from the queue
     pub fn clear(&self) {
         self.ffi_sub.as_ref().clear();
     }
 }
 
 impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
+    /// Takes a sample from the receiver queue
+    ///
+    /// If the receiver queue is empty, `None` will be returned.
     pub fn take(&self) -> Option<Sample<T, S>> {
         self.ffi_sub.as_ref().get_chunk().map(|data: *const T| {
             // this is safe since sample only implements `Deref` and not `DerefMut`
@@ -126,6 +146,9 @@ impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
 }
 
 impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<[T], S> {
+    /// Takes a sample from the receiver queue
+    ///
+    /// If the receiver queue is empty, `None` will be returned.
     pub fn take(&self) -> Option<Sample<[T], S>> {
         self.ffi_sub
             .as_ref()
@@ -166,8 +189,12 @@ impl<T: ?Sized, S: ffi::SubscriberStrongRef> Drop for SampleReceiver<T, S> {
     }
 }
 
+/// The state of the [`SampleReceiver`]
 pub enum SampleReceiverWaitState {
+    /// Samples are available and can be taken from the queue by [`SampleReceiver::take`]
     SamplesAvailable,
+    /// No samples received during the wait duration
     Timeout,
+    /// The [`SampleReceiver`] was stopped
     Stopped,
 }

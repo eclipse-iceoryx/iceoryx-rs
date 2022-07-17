@@ -15,7 +15,7 @@ Safe Rust bindings for [Eclipse iceoryx](https://github.com/eclipse-iceoryx/iceo
 2. [Examples](#examples)
     - [How to start RouDi](#how-to-start-roudi)
     - [Run the simple publisher and subscriber example](#run-the-simple-publisher-and-subscriber-example)
-3. [API by Example](#api-by-example)
+3. [How to write a simple application](#how-to-write-a-simple-application)
 4. [Limitations](#limitations)
 
 ## About
@@ -113,7 +113,7 @@ If `RouDi` is not running you get this output.
 
 After a waiting period, the application will shut down.
 
-## API by Example
+## How to write a simple application
 
 This is a brief API guide how to write a simple application.
 

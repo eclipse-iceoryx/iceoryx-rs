@@ -11,7 +11,7 @@ use std::ops::Deref;
 
 //TODO impl debug for Sample with T: Debug
 pub struct Sample<T, S: ffi::SubscriberStrongRef> {
-    pub data: Option<Box<T>>,
+    data: Option<Box<T>>,
     ffi_sub: S,
 }
 
@@ -19,14 +19,15 @@ impl<T, S: ffi::SubscriberStrongRef> Deref for Sample<T, S> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        self.data.as_ref().expect("valid sample")
+        // this is safe since only `drop` will take from the `Option`
+        unsafe { self.data.as_ref().unwrap_unchecked() }
     }
 }
 
 impl<T, S: ffi::SubscriberStrongRef> Drop for Sample<T, S> {
     fn drop(&mut self) {
         if let Some(chunk) = self.data.take() {
-            self.ffi_sub.as_ref().release_chunk(chunk);
+            self.ffi_sub.as_ref().release_chunk(Box::into_raw(chunk));
         }
     }
 }
@@ -88,13 +89,14 @@ impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
     }
 
     pub fn take(&self) -> Option<Sample<T, S>> {
-        self.ffi_sub
-            .as_ref()
-            .get_chunk()
-            .map(|chunk| Sample::<T, S> {
-                data: Some(chunk),
+        self.ffi_sub.as_ref().get_chunk().map(|data: *const T| {
+            // this is safe since sample only implements `Deref` and not `DerefMut`
+            let data = unsafe { Box::from_raw(data as *mut T) };
+            Sample::<T, S> {
+                data: Some(data),
                 ffi_sub: self.ffi_sub.clone(),
-            })
+            }
+        })
     }
 }
 

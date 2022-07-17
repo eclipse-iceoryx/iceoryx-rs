@@ -5,7 +5,7 @@
 
 use crate::SubscriberOptions;
 
-use std::ffi::CString;
+use std::ffi::{c_void, CString};
 use std::fmt;
 use std::time::Duration;
 
@@ -244,7 +244,7 @@ impl Subscriber {
         }
     }
 
-    pub fn get_chunk<T>(&self) -> Option<Box<T>> {
+    pub fn get_chunk<T>(&self) -> Option<*const T> {
         unsafe {
             let chunk = cpp!([self as "SubscriberPortUser*"] -> *const std::ffi::c_void as "const void*" {
                 auto getChunkResult = self->tryGetChunk();
@@ -257,18 +257,17 @@ impl Subscriber {
             });
 
             if !chunk.is_null() {
-                Some(Box::from_raw(chunk as *mut T))
+                Some(chunk as *const T)
             } else {
                 None
             }
         }
     }
 
-    pub fn release_chunk<T>(&self, chunk: Box<T>) {
+    pub fn release_chunk<T>(&self, chunk: *const T) {
         unsafe {
-            let chunk = Box::into_raw(chunk);
-            let mut chunk = &*chunk;
-            cpp!([self as "SubscriberPortUser*", mut chunk as "void*"] {
+            let chunk = chunk as *const c_void;
+            cpp!([self as "SubscriberPortUser*", chunk as "void*"] {
                 auto header = iox::mepoo::ChunkHeader::fromUserPayload(chunk);
                 self->releaseChunk(header);
             });

@@ -9,6 +9,7 @@ use crate::IceoryxError;
 
 use std::marker::PhantomData;
 use std::mem::MaybeUninit;
+use std::slice::from_raw_parts_mut;
 
 pub struct PublisherBuilder<'a, T: ShmSend + ?Sized> {
     service: &'a str,
@@ -117,12 +118,12 @@ impl<T: ShmSend + ?Sized> Publisher<T> {
 
     pub fn publish(&self, mut sample: SampleMut<T>) {
         if let Some(chunk) = sample.data.take() {
-            sample.publisher.ffi_pub.send(chunk)
+            sample.publisher.ffi_pub.send(Box::into_raw(chunk))
         }
     }
 
     pub(super) fn release_chunk(&self, chunk: Box<T>) {
-        self.ffi_pub.release(chunk);
+        self.ffi_pub.release(Box::into_raw(chunk));
     }
 }
 
@@ -143,6 +144,8 @@ impl<T: ShmSend> Publisher<T> {
             .ffi_pub
             .try_allocate::<T>()
             .ok_or(IceoryxError::LoanSampleFailed)?;
+
+        let data = unsafe { Box::from_raw(data as *mut MaybeUninit<T>) };
 
         Ok(SampleMut {
             data: Some(data),
@@ -202,6 +205,11 @@ impl<T: ShmSend> Publisher<[T]> {
             .ffi_pub
             .try_allocate_slice(len as u32, align as u32)
             .ok_or(IceoryxError::LoanSampleFailed)?;
+
+        let data = unsafe {
+            let data = from_raw_parts_mut(data as *mut MaybeUninit<T>, len as usize);
+            Box::from_raw(data)
+        };
 
         Ok(SampleMut {
             data: Some(data),

@@ -17,13 +17,15 @@ impl<'a, T: ShmSend + ?Sized> Deref for SampleMut<'a, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        self.data.as_ref().expect("valid sample")
+        // this is safe since only `drop` and `Publisher::send` will take the `Option`
+        unsafe { self.data.as_ref().unwrap_unchecked() }
     }
 }
 
 impl<'a, T: ShmSend + ?Sized> DerefMut for SampleMut<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        self.data.as_mut().expect("valid sample")
+        // this is safe since only `drop` and `Publisher::send` will take the `Option`
+        unsafe { self.data.as_mut().unwrap_unchecked() }
     }
 }
 
@@ -75,7 +77,8 @@ impl<'a, T: ShmSend> SampleMut<'a, [MaybeUninit<T>]> {
     pub unsafe fn slice_assume_init_mut(&mut self) -> &mut [T] {
         // TODO use `MaybeUninit::slice_assume_init_mut` once it is stabilized
         std::mem::transmute::<&mut [MaybeUninit<T>], &mut [T]>(
-            self.data.as_mut().expect("valid sample"),
+            // this is safe since only `drop` and `Publisher::send` will take the `Option`
+            self.data.as_mut().unwrap_unchecked(),
         )
     }
 }

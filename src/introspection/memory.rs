@@ -13,6 +13,7 @@ pub struct MemPoolIntrospection {
 }
 
 impl MemPoolIntrospection {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new() -> Result<InactiveSubscriber<MemPoolIntrospectionTopic>, IceoryxError> {
         SubscriberBuilder::<MemPoolIntrospectionTopic>::new("Introspection", "RouDi_ID", "MemPool")
             .queue_capacity(1)

@@ -13,6 +13,7 @@ pub struct ProcessIntrospection {
 }
 
 impl ProcessIntrospection {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new() -> Result<InactiveSubscriber<ProcessIntrospectionTopic>, IceoryxError> {
         SubscriberBuilder::<ProcessIntrospectionTopic>::new("Introspection", "RouDi_ID", "Process")
             .queue_capacity(1)

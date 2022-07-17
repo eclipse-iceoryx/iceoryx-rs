@@ -38,6 +38,10 @@ impl<'a, T: ShmSend + ?Sized> Drop for SampleMut<'a, T> {
 }
 
 impl<'a, T: ShmSend> SampleMut<'a, MaybeUninit<T>> {
+    /// # Safety
+    ///
+    /// The caller must ensure that `MaybeUninit<T>` really is initialized. Calling this when
+    /// the content is not fully initialized causes immediate undefined behavior.
     pub unsafe fn assume_init(mut self) -> SampleMut<'a, T> {
         let data = self.data.take().unwrap();
 
@@ -57,6 +61,10 @@ impl<'a, T: ShmSend> SampleMut<'a, MaybeUninit<T>> {
 }
 
 impl<'a, T: ShmSend> SampleMut<'a, [MaybeUninit<T>]> {
+    /// # Safety
+    ///
+    /// The caller must ensure that `MaybeUninit<T>` really is initialized. Calling this when
+    /// the content is not fully initialized causes immediate undefined behavior.
     pub unsafe fn assume_init(mut self) -> SampleMut<'a, [T]> {
         let data = self.data.take().unwrap();
 
@@ -73,10 +81,18 @@ impl<'a, T: ShmSend> SampleMut<'a, [MaybeUninit<T>]> {
             ),
         }
     }
+}
 
-    pub unsafe fn slice_assume_init_mut(&mut self) -> &mut [T] {
-        // TODO use `MaybeUninit::slice_assume_init_mut` once it is stabilized
-        std::mem::transmute::<&mut [MaybeUninit<T>], &mut [T]>(
+impl<'a> SampleMut<'a, [MaybeUninit<u8>]> {
+    /// # Safety
+    ///
+    /// It is safe to write to the slice but reading is undefined behaviour.
+    /// The main purpose of this method is to be used in combination with the `bytes::BufMut` trait.
+    pub unsafe fn slice_assume_init_mut(&mut self) -> &mut [u8] {
+        // TODO check if `MaybeUninit::slice_assume_init_mut` can be used once it is stabilized;
+        // it might not be possible since current documentation labels the usage as undefined behavior
+        // without restricting it to read access
+        std::mem::transmute::<&mut [MaybeUninit<u8>], &mut [u8]>(
             // this is safe since only `drop` and `Publisher::send` will take the `Option`
             self.data.as_mut().unwrap_unchecked(),
         )

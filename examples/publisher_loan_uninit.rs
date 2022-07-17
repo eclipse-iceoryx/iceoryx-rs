@@ -13,13 +13,13 @@ use std::thread;
 use std::time::Duration;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    Runtime::init("publisher_loan_uninitialized");
+    Runtime::init("publisher_loan_uninit");
 
     let publisher = PublisherBuilder::<Counter>::new("Radar", "FrontLeft", "Counter").create()?;
 
     let mut counter = 0u32;
     loop {
-        let mut sample = publisher.loan_uninitialized()?;
+        let mut sample = publisher.loan_uninit()?;
         let sample = unsafe {
             (*sample.as_mut_ptr()).counter = counter;
             sample.assume_init()

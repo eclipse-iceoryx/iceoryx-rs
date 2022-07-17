@@ -135,7 +135,7 @@ fn loaning_uninitialized_sample() -> Result<()> {
     let publisher = PublisherBuilder::<Counter>::new("Test", "BasicPubSub", "Counter").create()?;
 
     const SEND_COUNTER: u32 = 73;
-    let mut sample = publisher.loan_uninitialized()?;
+    let mut sample = publisher.loan_uninit()?;
     let sample = unsafe {
         (*sample.as_mut_ptr()).counter = SEND_COUNTER;
         sample.assume_init()

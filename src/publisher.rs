@@ -150,7 +150,7 @@ impl<T: ShmSend> Publisher<T> {
         Ok(SampleMut {
             data: Some(data),
             publisher: unsafe {
-                // the transmute is not nice but save since MaybeUninit has the same layout as the inner type
+                // the transmute is not nice but safe since MaybeUninit has the same layout as the inner type
                 std::mem::transmute::<&Publisher<T>, &Publisher<MaybeUninit<T>>>(self)
             },
         })
@@ -214,7 +214,7 @@ impl<T: ShmSend> Publisher<[T]> {
         Ok(SampleMut {
             data: Some(data),
             publisher: unsafe {
-                // the transmute is not nice but save since MaybeUninit has the same layout as the inner type
+                // the transmute is not nice but safe since MaybeUninit has the same layout as the inner type
                 std::mem::transmute::<&Publisher<[T]>, &Publisher<[MaybeUninit<T>]>>(self)
             },
         })

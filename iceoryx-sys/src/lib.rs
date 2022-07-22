@@ -9,6 +9,9 @@ extern crate cpp;
 
 pub mod introspection;
 
+mod chunk_header;
+pub use chunk_header::ChunkHeader;
+
 mod publisher;
 pub use publisher::Publisher;
 

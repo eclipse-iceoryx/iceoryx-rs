@@ -108,10 +108,10 @@ impl Publisher {
         let size = std::mem::size_of::<T>() as u32;
         let align = std::mem::align_of::<T>() as u32;
         unsafe {
-            let chunk = self.try_allocate_chunk(size, align);
+            let payload = self.try_allocate_chunk(size, align);
 
-            if !chunk.is_null() {
-                Some(chunk as *mut T)
+            if !payload.is_null() {
+                Some(payload as *mut T)
             } else {
                 None
             }
@@ -125,10 +125,10 @@ impl Publisher {
             }
 
             let size = len * std::mem::size_of::<T>() as u32;
-            let chunk = self.try_allocate_chunk(size, align);
+            let payload = self.try_allocate_chunk(size, align);
 
-            if !chunk.is_null() {
-                Some(chunk as *mut T)
+            if !payload.is_null() {
+                Some(payload as *mut T)
             } else {
                 None
             }
@@ -136,7 +136,7 @@ impl Publisher {
     }
 
     unsafe fn try_allocate_chunk(&self, size: u32, align: u32) -> *mut c_void {
-        let chunk = cpp!([self as "PublisherPortUser*", size as "uint32_t", align as "uint32_t"] -> *mut std::ffi::c_void as "void*" {
+        let payload = cpp!([self as "PublisherPortUser*", size as "uint32_t", align as "uint32_t"] -> *mut std::ffi::c_void as "void*" {
             auto allocResult = self->tryAllocateChunk(size,
                                                       align,
                                                       iox::CHUNK_NO_USER_HEADER_SIZE,
@@ -147,24 +147,24 @@ impl Publisher {
                 return allocResult.value()->userPayload();
             }
         });
-        chunk
+        payload
     }
 
-    pub fn release<T: ?Sized>(&self, chunk: *mut T) {
+    pub fn release<T: ?Sized>(&self, payload: *mut T) {
         unsafe {
-            let chunk = chunk as *const c_void;
-            cpp!([self as "PublisherPortUser*", chunk as "void*"] {
-                auto header = iox::mepoo::ChunkHeader::fromUserPayload(chunk);
+            let payload = payload as *const c_void;
+            cpp!([self as "PublisherPortUser*", payload as "void*"] {
+                auto header = iox::mepoo::ChunkHeader::fromUserPayload(payload);
                 self->releaseChunk(header);
             });
         }
     }
 
-    pub fn send<T: ?Sized>(&self, chunk: *mut T) {
-        let chunk = chunk as *const c_void;
+    pub fn send<T: ?Sized>(&self, payload: *mut T) {
+        let payload = payload as *const c_void;
         unsafe {
-            cpp!([self as "PublisherPortUser*", chunk as "void*"] {
-                auto header = iox::mepoo::ChunkHeader::fromUserPayload(chunk);
+            cpp!([self as "PublisherPortUser*", payload as "void*"] {
+                auto header = iox::mepoo::ChunkHeader::fromUserPayload(payload);
                 self->sendChunk(header);
             });
         }

@@ -264,16 +264,6 @@ impl Subscriber {
         }
     }
 
-    pub fn get_user_payload_size<T>(&self, payload: *const T) -> u32 {
-        unsafe {
-            let payload = payload as *const c_void;
-            cpp!([payload as "void*"] -> u32 as "uint32_t" {
-                auto header = iox::mepoo::ChunkHeader::fromUserPayload(payload);
-                return header->userPayloadSize();
-            })
-        }
-    }
-
     pub fn release_chunk<T: ?Sized>(&self, payload: *const T) {
         unsafe {
             let payload = payload as *const c_void;

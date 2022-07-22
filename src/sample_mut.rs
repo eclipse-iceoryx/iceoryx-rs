@@ -97,4 +97,26 @@ impl<'a> SampleMut<'a, [MaybeUninit<u8>]> {
             self.data.as_mut().unwrap_unchecked(),
         )
     }
+
+    pub fn try_as_uninit<T: ShmSend>(&mut self) -> Option<&mut MaybeUninit<T>> {
+        unsafe {
+            let data = self.data.as_mut().unwrap_unchecked();
+            let chunk_header =
+                ffi::ChunkHeader::from_user_payload(&*(data.as_ptr())).unwrap_unchecked();
+            let payload_size = chunk_header.get_user_payload_size() as usize;
+            let payload_alignment = chunk_header.get_user_payload_alignment() as usize;
+
+            if payload_size >= std::mem::size_of::<T>()
+                && payload_alignment >= std::mem::align_of::<T>()
+            {
+                Some(
+                    &mut *(std::mem::transmute::<*mut MaybeUninit<u8>, *mut MaybeUninit<T>>(
+                        data.as_mut_ptr(),
+                    )),
+                )
+            } else {
+                None
+            }
+        }
+    }
 }

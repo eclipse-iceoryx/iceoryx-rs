@@ -2,6 +2,9 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
+mod topic;
+use topic::Counter;
+
 use iceoryx_rs::Runtime;
 use iceoryx_rs::SubscriberBuilder;
 
@@ -21,9 +24,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let sample_receiver = subscriber.get_sample_receiver(sample_receive_token);
 
+    let mut counter = 0;
     loop {
         if sample_receiver.has_data() {
             while let Some(sample) = sample_receiver.take() {
+                counter = match counter % 2 {
+                    // as buffer
+                    0 => sample.as_ref().get_u32_le(),
+                    // transmute to concrete type
+                    1 => unsafe { sample.try_as::<Counter>().expect("Valid data").counter },
+                    _ => unreachable!(),
+                };
                 println!("Receiving: {}", sample.as_ref().get_u32_le());
             }
         } else {

@@ -2,6 +2,9 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
+mod topic;
+use topic::Counter;
+
 use iceoryx_rs::PublisherBuilder;
 use iceoryx_rs::Runtime;
 
@@ -18,24 +21,40 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut counter = 0u32;
     loop {
-        let sample = if counter % 2 == 1 {
+        let sample = match counter % 3 {
             // with initialized slice
-            let mut sample = publisher.loan_slice_with_alignment(
-                std::mem::size_of::<u32>(),
-                std::mem::align_of::<u32>(),
-            )?;
-            sample.as_mut().put_u32_le(counter);
-            sample
-        } else {
-            // with uninitialized slice
-            let mut sample = publisher.loan_uninit_slice_with_alignment(
-                std::mem::size_of::<u32>(),
-                std::mem::align_of::<u32>(),
-            )?;
-            unsafe {
-                sample.slice_assume_init_mut().put_u32_le(counter);
-                sample.assume_init()
+            0 => {
+                let mut sample = publisher.loan_slice_with_alignment(
+                    std::mem::size_of::<u32>(),
+                    std::mem::align_of::<u32>(),
+                )?;
+                sample.as_mut().put_u32_le(counter);
+                sample
             }
+            // with uninitialized slice
+            1 => {
+                let mut sample = publisher.loan_uninit_slice_with_alignment(
+                    std::mem::size_of::<u32>(),
+                    std::mem::align_of::<u32>(),
+                )?;
+                unsafe {
+                    sample.slice_assume_init_mut().put_u32_le(counter);
+                    sample.assume_init()
+                }
+            }
+            // transmute to concrete type
+            2 => {
+                let mut sample = publisher.loan_uninit_slice_with_alignment(
+                    std::mem::size_of::<Counter>(),
+                    std::mem::align_of::<Counter>(),
+                )?;
+                let data = sample.try_as_uninit::<Counter>().expect("Valid data");
+                unsafe {
+                    (*data.as_mut_ptr()).counter = counter;
+                    sample.assume_init()
+                }
+            }
+            _ => unreachable!(),
         };
         publisher.publish(sample);
 

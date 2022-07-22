@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
+use crate::marker::ShmSend;
 use crate::SubscribeState;
 
 use std::marker::PhantomData;
@@ -29,6 +30,27 @@ impl<T: ?Sized, S: ffi::SubscriberStrongRef> Drop for Sample<T, S> {
     fn drop(&mut self) {
         if let Some(chunk) = self.data.take() {
             self.ffi_sub.as_ref().release_chunk(Box::into_raw(chunk));
+        }
+    }
+}
+
+impl<S: ffi::SubscriberStrongRef> Sample<[u8], S> {
+    /// # Safety
+    ///
+    /// The caller must ensure that the [u8] is actually a T. It is undefined behavior if the underlying data is not a T.
+    pub unsafe fn try_as<T: ShmSend>(&self) -> Option<&T> {
+        let data = self.data.as_ref().unwrap_unchecked();
+        let chunk_header =
+            ffi::ChunkHeader::from_user_payload(&*(data.as_ptr())).unwrap_unchecked();
+        let payload_size = chunk_header.get_user_payload_size() as usize;
+        let payload_alignment = chunk_header.get_user_payload_alignment() as usize;
+
+        if payload_size >= std::mem::size_of::<T>()
+            && payload_alignment >= std::mem::align_of::<T>()
+        {
+            Some(&*(std::mem::transmute::<*const u8, *const T>(data.as_ptr())))
+        } else {
+            None
         }
     }
 }
@@ -109,10 +131,15 @@ impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<[T], S> {
             .as_ref()
             .get_chunk()
             .and_then(|data: *const T| {
-                let payload_size = self.ffi_sub.as_ref().get_user_payload_size(data);
+                let chunk_header =
+                    unsafe { ffi::ChunkHeader::from_user_payload(&*data).unwrap_unchecked() };
+                let payload_size = chunk_header.get_user_payload_size();
+                let payload_alignment = chunk_header.get_user_payload_alignment();
                 let len = payload_size as usize / std::mem::size_of::<T>();
 
-                if payload_size as usize % std::mem::size_of::<T>() == 0 {
+                if payload_size as usize % std::mem::size_of::<T>() == 0
+                    && payload_alignment as usize >= std::mem::align_of::<T>()
+                {
                     let data = unsafe {
                         // this is safe since sample only implements `Deref` and not `DerefMut`
                         let data = from_raw_parts_mut(data as *mut T, len as usize);

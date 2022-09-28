@@ -50,6 +50,9 @@ pub use subscriber::SubscriberBuilder;
 mod sample_mut;
 pub use sample_mut::SampleMut;
 
+mod sample_mut_arc;
+pub use sample_mut_arc::SampleMutArc;
+
 mod sample;
 pub use sample::Sample;
 pub use sample::SampleReceiver;

@@ -6,10 +6,12 @@ use super::SampleMut;
 use crate::marker::ShmSend;
 use crate::ConsumerTooSlowPolicy;
 use crate::IceoryxError;
+use crate::SampleMutArc;
 
 use std::marker::PhantomData;
 use std::mem::MaybeUninit;
 use std::slice::from_raw_parts_mut;
+use std::sync::Arc;
 
 /// Create a publisher with custom options
 ///
@@ -193,6 +195,13 @@ impl<T: ShmSend + ?Sized> Publisher<T> {
         }
     }
 
+    /// Publishes a reference-counted sample
+    pub fn publish_arc(&self, mut sample: SampleMutArc<T>) {
+        if let Some(chunk) = sample.data.take() {
+            sample.publisher.ffi_pub.send(Box::into_raw(chunk))
+        }
+    }
+
     pub(super) fn release_chunk(&self, chunk: Box<T>) {
         self.ffi_pub.release(Box::into_raw(chunk));
     }
@@ -206,6 +215,20 @@ impl<T: ShmSend + Default> Publisher<T> {
     /// can be used.
     pub fn loan(&self) -> Result<SampleMut<T>, IceoryxError> {
         let mut sample = self.loan_uninit()?;
+
+        unsafe {
+            sample.as_mut_ptr().write(T::default());
+            Ok(sample.assume_init())
+        }
+    }
+
+    /// Loan a reference-counted sample
+    ///
+    /// The loaned sample is initialized with the default value of the type. If this is not desired
+    /// or the type does not implement the `Default` trait, [`loan_uninit`](Self::loan_uninit)
+    /// can be used.
+    pub fn loan_arc(self: &Arc<Self>) -> Result<SampleMutArc<T>, IceoryxError> {
+        let mut sample = self.loan_uninit_arc()?;
 
         unsafe {
             sample.as_mut_ptr().write(T::default());
@@ -234,6 +257,28 @@ impl<T: ShmSend> Publisher<T> {
             },
         })
     }
+
+    /// Loan an uninitialized, reference-counted sample
+    ///
+    /// Same as [`loan_arc`](Self::loan_arc) but with uninitialized data.
+    pub fn loan_uninit_arc(self: &Arc<Self>) -> Result<SampleMutArc<MaybeUninit<T>>, IceoryxError> {
+        let data = self
+            .ffi_pub
+            .try_allocate::<T>()
+            .ok_or(IceoryxError::LoanSampleFailed)?;
+
+        let data = unsafe { Box::from_raw(data as *mut MaybeUninit<T>) };
+
+        Ok(SampleMutArc {
+            data: Some(data),
+            publisher: unsafe {
+                // the transmute is not nice but safe since MaybeUninit has the same layout as the inner type
+                std::mem::transmute::<Arc<Publisher<T>>, Arc<Publisher<MaybeUninit<T>>>>(
+                    self.clone(),
+                )
+            },
+        })
+    }
 }
 
 impl<T: ShmSend + Default> Publisher<[T]> {
@@ -250,6 +295,21 @@ impl<T: ShmSend + Default> Publisher<[T]> {
     /// Please use [`loan_slice_with_alignment`](Self::loan_slice_with_alignment) for this purpose.
     pub fn loan_slice(&self, len: usize) -> Result<SampleMut<[T]>, IceoryxError> {
         self.loan_slice_with_alignment(len, std::mem::align_of::<T>())
+    }
+
+    /// Loan a reference-counted slice with the same alignment as `T`
+    ///
+    /// The loaned slice is initialized with the default value of the type. If this is not desired
+    /// or the type does not implement the `Default` trait, [`loan_uninit_slice`](Self::loan_uninit_slice)
+    /// can be used.
+    ///
+    /// This method can be used to emulate an untyped sample when a `[u8]` slice is used.
+    /// In this case, it might be desirable to use a larger alignment, i.e. the largest
+    ///  alignment of the type in the buffer. This is required to utilize crates like
+    /// [zerocopy](https://crates.io/crates/zerocopy) for safe zero-copy parsing and serialization.
+    /// Please use [`loan_slice_with_alignment`](Self::loan_slice_with_alignment) for this purpose.
+    pub fn loan_slice_arc(self: &Arc<Self>, len: usize) -> Result<SampleMutArc<[T]>, IceoryxError> {
+        self.loan_slice_with_alignment_arc(len, std::mem::align_of::<T>())
     }
 
     /// Loan a slice with a custom alignment
@@ -275,6 +335,30 @@ impl<T: ShmSend + Default> Publisher<[T]> {
             Ok(sample.assume_init())
         }
     }
+
+    /// Loan a reference-counted slice with a custom alignment
+    ///
+    /// The alignment must be greater or equal than the alignment of `T`.
+    ///
+    /// This method is ideal in combination with crates like [zerocopy](https://crates.io/crates/zerocopy) for
+    /// safe zero-copy parsing and serialization.
+    pub fn loan_slice_with_alignment_arc(
+        self: &Arc<Self>,
+        len: usize,
+        align: usize,
+    ) -> Result<SampleMutArc<[T]>, IceoryxError> {
+        let mut sample = self.loan_uninit_slice_with_alignment_arc(len, align)?;
+
+        unsafe {
+            // TODO use `MaybeUninit::slice_assume_init_mut` once it is stabilized
+            std::mem::transmute::<&mut [MaybeUninit<T>], &mut [T]>(
+                sample.data.as_mut().expect("valid sample"),
+            )
+            .fill_with(|| T::default());
+
+            Ok(sample.assume_init())
+        }
+    }
 }
 
 impl<T: ShmSend> Publisher<[T]> {
@@ -288,6 +372,18 @@ impl<T: ShmSend> Publisher<[T]> {
         len: usize,
     ) -> Result<SampleMut<[MaybeUninit<T>]>, IceoryxError> {
         self.loan_uninit_slice_with_alignment(len, std::mem::align_of::<T>())
+    }
+
+    /// Loan an uninitialized, reference-counted slice with the same alignment as `T`
+    ///
+    /// Same as [`loan_slice`](Self::loan_slice) but with uninitialized data.
+    ///
+    /// Have a look at [`loan_slice`](Self::loan_slice) for considerations regarding a custom alignment.
+    pub fn loan_uninit_slice_arc(
+        self: &Arc<Self>,
+        len: usize,
+    ) -> Result<SampleMutArc<[MaybeUninit<T>]>, IceoryxError> {
+        self.loan_uninit_slice_with_alignment_arc(len, std::mem::align_of::<T>())
     }
 
     /// Loan an uninitialized slice with a custom alignment
@@ -320,6 +416,42 @@ impl<T: ShmSend> Publisher<[T]> {
             publisher: unsafe {
                 // the transmute is not nice but safe since MaybeUninit has the same layout as the inner type
                 std::mem::transmute::<&Publisher<[T]>, &Publisher<[MaybeUninit<T>]>>(self)
+            },
+        })
+    }
+
+    /// Loan an uninitialized, reference-counted slice with a custom alignment
+    ///
+    /// Same as [`loan_slice_with_alignment_arc`](Self::loan_slice_with_alignment_arc) but with uninitialized data.
+    pub fn loan_uninit_slice_with_alignment_arc(
+        self: &Arc<Self>,
+        len: usize,
+        align: usize,
+    ) -> Result<SampleMutArc<[MaybeUninit<T>]>, IceoryxError> {
+        if align < std::mem::align_of::<T>() {
+            return Err(IceoryxError::InvalidAlignment {
+                requested: align,
+                min_required: std::mem::align_of::<T>(),
+            });
+        }
+
+        let data = self
+            .ffi_pub
+            .try_allocate_slice(len as u32, align as u32)
+            .ok_or(IceoryxError::LoanSampleFailed)?;
+
+        let data = unsafe {
+            let data = from_raw_parts_mut(data as *mut MaybeUninit<T>, len as usize);
+            Box::from_raw(data)
+        };
+
+        Ok(SampleMutArc {
+            data: Some(data),
+            publisher: unsafe {
+                // the transmute is not nice but safe since MaybeUninit has the same layout as the inner type
+                std::mem::transmute::<Arc<Publisher<[T]>>, Arc<Publisher<[MaybeUninit<T>]>>>(
+                    self.clone(),
+                )
             },
         })
     }

@@ -84,7 +84,7 @@ jobs:
         cargo clippy --version >> version_info
         cat version_info
     - name: Setup cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: |
           ~/.cargo/bin/
@@ -131,7 +131,7 @@ jobs:
         cargo --version >> version_info
         cat version_info
     - name: Setup cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: |
           ~/.cargo/bin/

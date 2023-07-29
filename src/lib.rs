@@ -84,6 +84,8 @@ pub mod mt {
 // re-exports from iceoryx-sys
 pub use ffi::ConsumerTooSlowPolicy;
 pub use ffi::QueueFullPolicy;
+pub use ffi::RawSample;
+pub use ffi::RawSampleMut;
 pub use ffi::Runtime;
 pub use ffi::SubscribeState;
 

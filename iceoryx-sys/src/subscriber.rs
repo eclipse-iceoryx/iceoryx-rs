@@ -3,7 +3,7 @@
 // SPDX-FileContributor: Mathias Kraus
 // SPDX-FileContributor: Apex.AI
 
-use crate::SubscriberOptions;
+use crate::{RawSample, SubscriberOptions};
 
 use std::ffi::{c_void, CString};
 use std::fmt;
@@ -244,29 +244,55 @@ impl Subscriber {
         }
     }
 
-    pub fn get_chunk<T>(&self) -> Option<*const T> {
+    pub fn try_take<T>(&self) -> Option<RawSample<T>> {
+        unsafe { self.try_get_chunk().map(|payload| payload.cast::<T>()) }
+    }
+
+    pub fn try_take_slice<T>(&self) -> Option<RawSample<[T]>> {
         unsafe {
-            let payload = cpp!([self as "SubscriberPortUser*"] -> *const std::ffi::c_void as "const void*" {
-                auto getChunkResult = self->tryGetChunk();
+            let payload = self.try_get_chunk()?;
 
-                if (getChunkResult.has_error()) {
-                    return nullptr;
-                }
+            let chunk_header = payload.chunk_header();
+            let payload_size = chunk_header.get_user_payload_size();
+            let payload_alignment = chunk_header.get_user_payload_alignment();
+            let len = payload_size as usize / std::mem::size_of::<T>();
 
-                return getChunkResult.value()->userPayload();
-            });
-
-            if !payload.is_null() {
-                Some(payload as *const T)
+            if payload_size as usize % std::mem::size_of::<T>() == 0
+                && payload_alignment as usize >= std::mem::align_of::<T>()
+            {
+                Some(RawSample::slice_from_raw_parts(
+                    payload.cast::<T>(),
+                    len as usize,
+                ))
             } else {
+                // TODO return Result<Option<T>>
+                self.release(payload);
                 None
             }
         }
     }
 
-    pub fn release_chunk<T: ?Sized>(&self, payload: *const T) {
+    unsafe fn try_get_chunk(&self) -> Option<RawSample<c_void>> {
+        let payload = cpp!([self as "SubscriberPortUser*"] -> *const std::ffi::c_void as "const void*" {
+            auto getChunkResult = self->tryGetChunk();
+
+            if (getChunkResult.has_error()) {
+                return nullptr;
+            }
+
+            return getChunkResult.value()->userPayload();
+        });
+
+        if !payload.is_null() {
+            Some(RawSample::new_unchecked(payload))
+        } else {
+            None
+        }
+    }
+
+    pub fn release<T: ?Sized>(&self, sample: RawSample<T>) {
         unsafe {
-            let payload = payload as *const c_void;
+            let payload = sample.cast::<c_void>().as_payload_ptr();
             cpp!([self as "SubscriberPortUser*", payload as "void*"] {
                 auto header = iox::mepoo::ChunkHeader::fromUserPayload(payload);
                 self->releaseChunk(header);

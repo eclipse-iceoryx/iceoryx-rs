@@ -13,17 +13,21 @@ cpp! {{
 cpp_class!(pub unsafe struct ChunkHeader as "ChunkHeader");
 
 impl ChunkHeader {
-    pub fn from_user_payload<T>(payload: &T) -> Option<&Self> {
-        let payload = payload as *const T as *const c_void;
+    /// Get a reference to a ChunkHeader
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that `payload` is non-null
+    pub(super) unsafe fn from_user_payload_unchecked<'a>(payload: *const c_void) -> &'a Self {
         unsafe {
             let chunk_header = cpp!([payload as "void*"] -> *const c_void as "const void*" {
                 return iox::mepoo::ChunkHeader::fromUserPayload(payload);
             });
-            if chunk_header.is_null() {
-                None
-            } else {
-                Some(&*(chunk_header as *const Self))
-            }
+            debug_assert!(
+                !chunk_header.is_null(),
+                "The ChunkHeader ptr should always be non-null when the payload ptr was non-null!"
+            );
+            &*(chunk_header as *const Self)
         }
     }
 

@@ -3,35 +3,59 @@
 // SPDX-FileContributor: Mathias Kraus
 
 use crate::marker::ShmSend;
-use crate::SubscribeState;
+use crate::{RawSample, SubscribeState};
 
 use std::marker::PhantomData;
-use std::slice::from_raw_parts_mut;
 use std::time::{Duration, SystemTime};
 
+use std::mem::ManuallyDrop;
 use std::ops::Deref;
 
 //TODO impl debug for Sample with T: Debug
 /// An immutable sample shared between multiple subscriber
 pub struct Sample<T: ?Sized, S: ffi::SubscriberStrongRef> {
-    data: Option<Box<T>>,
-    ffi_sub: S,
+    data: RawSample<T>,
+    ffi_sub: ManuallyDrop<S>,
 }
 
 impl<T: ?Sized, S: ffi::SubscriberStrongRef> Deref for Sample<T, S> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        // this is safe since only `drop` will take from the `Option`
-        unsafe { self.data.as_ref().unwrap_unchecked() }
+        // SAFETY: `as_payload_ptr` returns a non-null ptr
+        unsafe { &*self.data.as_payload_ptr() }
     }
 }
 
 impl<T: ?Sized, S: ffi::SubscriberStrongRef> Drop for Sample<T, S> {
     fn drop(&mut self) {
-        if let Some(chunk) = self.data.take() {
-            self.ffi_sub.as_ref().release_chunk(Box::into_raw(chunk));
+        self.ffi_sub.as_ref().release(self.data);
+        unsafe {
+            ManuallyDrop::<S>::drop(&mut self.ffi_sub);
         }
+    }
+}
+
+impl<T: ?Sized, S: ffi::SubscriberStrongRef> Sample<T, S> {
+    fn into_raw_parts(mut self) -> (RawSample<T>, S) {
+        let sample = self.data;
+        let ffi_sub = ManuallyDrop::into_inner(self.ffi_sub.clone());
+        unsafe {
+            ManuallyDrop::<S>::drop(&mut self.ffi_sub);
+        }
+        std::mem::forget(self); // forget `self` to not call drop
+        (sample, ffi_sub)
+    }
+
+    /// Convert into `RawSample`
+    ///
+    /// The sample must manually be managed by calling either `release_raw` via the corresponding
+    /// subscriber. Not doing either will lead to a memory leak.
+    /// `RawSample` is a thin wrapper around a raw pointer which is guaranteed to be non-null
+    /// but it might be dangling if `release_raw` was already called on the specific raw sample.
+    pub fn into_raw(self) -> RawSample<T> {
+        let (sample, _) = self.into_raw_parts();
+        sample
     }
 }
 
@@ -44,16 +68,15 @@ impl<S: ffi::SubscriberStrongRef> Sample<[u8], S> {
     ///
     /// The caller must ensure that the [u8] is actually a T. It is undefined behavior if the underlying data is not a T.
     pub unsafe fn try_as<T: ShmSend>(&self) -> Option<&T> {
-        let data = self.data.as_ref().unwrap_unchecked();
-        let chunk_header =
-            ffi::ChunkHeader::from_user_payload(&*(data.as_ptr())).unwrap_unchecked();
+        let chunk_header = self.data.chunk_header();
         let payload_size = chunk_header.get_user_payload_size() as usize;
         let payload_alignment = chunk_header.get_user_payload_alignment() as usize;
 
         if payload_size >= std::mem::size_of::<T>()
             && payload_alignment >= std::mem::align_of::<T>()
         {
-            Some(&*(std::mem::transmute::<*const u8, *const T>(data.as_ptr())))
+            let payload = self.data.cast::<u8>().as_payload_ptr();
+            Some(&*(std::mem::transmute::<*const u8, *const T>(payload)))
         } else {
             None
         }
@@ -127,6 +150,11 @@ impl<T: ?Sized, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
     pub fn clear(&self) {
         self.ffi_sub.as_ref().clear();
     }
+
+    /// Releases a raw sample which will not be used anymore
+    pub fn release_raw(&self, sample: RawSample<T>) {
+        self.ffi_sub.as_ref().release(sample);
+    }
 }
 
 impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
@@ -134,14 +162,13 @@ impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
     ///
     /// If the receiver queue is empty, `None` will be returned.
     pub fn take(&self) -> Option<Sample<T, S>> {
-        self.ffi_sub.as_ref().get_chunk().map(|data: *const T| {
-            // this is safe since sample only implements `Deref` and not `DerefMut`
-            let data = unsafe { Box::from_raw(data as *mut T) };
-            Sample::<T, S> {
-                data: Some(data),
-                ffi_sub: self.ffi_sub.clone(),
-            }
-        })
+        self.ffi_sub
+            .as_ref()
+            .try_take::<T>()
+            .map(|data| Sample::<T, S> {
+                data,
+                ffi_sub: ManuallyDrop::new(self.ffi_sub.clone()),
+            })
     }
 }
 
@@ -152,32 +179,10 @@ impl<T, S: ffi::SubscriberStrongRef> SampleReceiver<[T], S> {
     pub fn take(&self) -> Option<Sample<[T], S>> {
         self.ffi_sub
             .as_ref()
-            .get_chunk()
-            .and_then(|data: *const T| {
-                let chunk_header =
-                    unsafe { ffi::ChunkHeader::from_user_payload(&*data).unwrap_unchecked() };
-                let payload_size = chunk_header.get_user_payload_size();
-                let payload_alignment = chunk_header.get_user_payload_alignment();
-                let len = payload_size as usize / std::mem::size_of::<T>();
-
-                if payload_size as usize % std::mem::size_of::<T>() == 0
-                    && payload_alignment as usize >= std::mem::align_of::<T>()
-                {
-                    let data = unsafe {
-                        // this is safe since sample only implements `Deref` and not `DerefMut`
-                        let data = from_raw_parts_mut(data as *mut T, len as usize);
-                        Box::from_raw(data)
-                    };
-
-                    Some(Sample::<[T], S> {
-                        data: Some(data),
-                        ffi_sub: self.ffi_sub.clone(),
-                    })
-                } else {
-                    // TODO return Result<Option<T>>
-                    self.ffi_sub.as_ref().release_chunk(data);
-                    None
-                }
+            .try_take_slice::<T>()
+            .map(|data| Sample::<[T], S> {
+                data,
+                ffi_sub: ManuallyDrop::new(self.ffi_sub.clone()),
             })
     }
 }

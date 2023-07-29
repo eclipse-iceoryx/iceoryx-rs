@@ -2,9 +2,10 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-use crate::PublisherOptions;
+use crate::{PublisherOptions, RawSampleMut};
 
 use std::ffi::{c_void, CString};
+use std::mem::MaybeUninit;
 
 cpp! {{
     #include "iceoryx_posh/internal/popo/ports/publisher_port_user.hpp"
@@ -104,38 +105,33 @@ impl Publisher {
         }
     }
 
-    pub fn try_allocate<T>(&self) -> Option<*mut T> {
+    pub fn try_allocate<T>(&self) -> Option<RawSampleMut<MaybeUninit<T>>> {
         let size = std::mem::size_of::<T>() as u32;
         let align = std::mem::align_of::<T>() as u32;
         unsafe {
-            let payload = self.try_allocate_chunk(size, align);
-
-            if !payload.is_null() {
-                Some(payload as *mut T)
-            } else {
-                None
-            }
+            self.try_allocate_chunk(size, align)
+                .map(|payload| payload.cast::<MaybeUninit<T>>())
         }
     }
 
-    pub fn try_allocate_slice<T>(&self, len: u32, align: u32) -> Option<*mut T> {
+    pub fn try_allocate_slice<T>(
+        &self,
+        len: u32,
+        align: u32,
+    ) -> Option<RawSampleMut<[MaybeUninit<T>]>> {
         unsafe {
             if align < std::mem::align_of::<T>() as u32 {
                 return None;
             }
 
             let size = len * std::mem::size_of::<T>() as u32;
-            let payload = self.try_allocate_chunk(size, align);
-
-            if !payload.is_null() {
-                Some(payload as *mut T)
-            } else {
-                None
-            }
+            self.try_allocate_chunk(size, align).map(|payload| {
+                RawSampleMut::slice_from_raw_parts(payload.cast::<MaybeUninit<T>>(), len as usize)
+            })
         }
     }
 
-    unsafe fn try_allocate_chunk(&self, size: u32, align: u32) -> *mut c_void {
+    unsafe fn try_allocate_chunk(&self, size: u32, align: u32) -> Option<RawSampleMut<c_void>> {
         let payload = cpp!([self as "PublisherPortUser*", size as "uint32_t", align as "uint32_t"] -> *mut std::ffi::c_void as "void*" {
             auto allocResult = self->tryAllocateChunk(size,
                                                       align,
@@ -147,12 +143,17 @@ impl Publisher {
                 return allocResult.value()->userPayload();
             }
         });
-        payload
+
+        if !payload.is_null() {
+            Some(RawSampleMut::new_unchecked(payload))
+        } else {
+            None
+        }
     }
 
-    pub fn release<T: ?Sized>(&self, payload: *mut T) {
+    pub fn release<T: ?Sized>(&self, sample: RawSampleMut<T>) {
         unsafe {
-            let payload = payload as *const c_void;
+            let payload = sample.cast::<c_void>().as_payload_ptr();
             cpp!([self as "PublisherPortUser*", payload as "void*"] {
                 auto header = iox::mepoo::ChunkHeader::fromUserPayload(payload);
                 self->releaseChunk(header);
@@ -160,8 +161,8 @@ impl Publisher {
         }
     }
 
-    pub fn send<T: ?Sized>(&self, payload: *mut T) {
-        let payload = payload as *const c_void;
+    pub fn send<T: ?Sized>(&self, sample: RawSampleMut<T>) {
+        let payload = sample.cast::<c_void>().as_payload_ptr();
         unsafe {
             cpp!([self as "PublisherPortUser*", payload as "void*"] {
                 auto header = iox::mepoo::ChunkHeader::fromUserPayload(payload);

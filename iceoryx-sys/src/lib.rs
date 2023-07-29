@@ -25,6 +25,10 @@ pub use queue_policy::QueueFullPolicy;
 mod runtime;
 pub use runtime::Runtime;
 
+mod sample;
+pub use sample::RawSample;
+pub use sample::RawSampleMut;
+
 mod subscriber;
 pub use subscriber::ConditionVariable;
 pub use subscriber::SubscribeState;

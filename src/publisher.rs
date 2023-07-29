@@ -2,14 +2,13 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-use super::SampleMut;
+use super::{RawSampleMut, SampleMut};
 use crate::marker::ShmSend;
 use crate::ConsumerTooSlowPolicy;
 use crate::IceoryxError;
 
 use std::marker::PhantomData;
 use std::mem::MaybeUninit;
-use std::slice::from_raw_parts_mut;
 
 /// Create a publisher with custom options
 ///
@@ -187,14 +186,18 @@ impl<T: ShmSend + ?Sized> Publisher<T> {
     }
 
     /// Publishes a sample
-    pub fn publish(&self, mut sample: SampleMut<T>) {
-        if let Some(chunk) = sample.data.take() {
-            sample.publisher.ffi_pub.send(Box::into_raw(chunk))
-        }
+    pub fn publish(&self, sample: SampleMut<T>) {
+        self.publish_raw(sample.into_raw())
     }
 
-    pub(super) fn release_chunk(&self, chunk: Box<T>) {
-        self.ffi_pub.release(Box::into_raw(chunk));
+    /// Publishes a raw sample
+    pub fn publish_raw(&self, sample: RawSampleMut<T>) {
+        self.ffi_pub.send(sample)
+    }
+
+    /// Releases a raw sample which will not be published
+    pub fn release_raw(&self, sample: RawSampleMut<T>) {
+        self.ffi_pub.release(sample);
     }
 }
 
@@ -224,15 +227,10 @@ impl<T: ShmSend> Publisher<T> {
             .try_allocate::<T>()
             .ok_or(IceoryxError::LoanSampleFailed)?;
 
-        let data = unsafe { Box::from_raw(data as *mut MaybeUninit<T>) };
-
-        Ok(SampleMut {
-            data: Some(data),
-            publisher: unsafe {
-                // the transmute is not nice but safe since MaybeUninit has the same layout as the inner type
-                std::mem::transmute::<&Publisher<T>, &Publisher<MaybeUninit<T>>>(self)
-            },
-        })
+        // the transmute is not nice but safe since MaybeUninit has the same layout as the inner type
+        let publisher =
+            unsafe { std::mem::transmute::<&Publisher<T>, &Publisher<MaybeUninit<T>>>(self) };
+        Ok(SampleMut::new(data, publisher))
     }
 }
 
@@ -266,12 +264,7 @@ impl<T: ShmSend + Default> Publisher<[T]> {
         let mut sample = self.loan_uninit_slice_with_alignment(len, align)?;
 
         unsafe {
-            // TODO use `MaybeUninit::slice_assume_init_mut` once it is stabilized
-            std::mem::transmute::<&mut [MaybeUninit<T>], &mut [T]>(
-                sample.data.as_mut().expect("valid sample"),
-            )
-            .fill_with(|| T::default());
-
+            sample.fill_with(|| MaybeUninit::new(T::default()));
             Ok(sample.assume_init())
         }
     }
@@ -310,17 +303,9 @@ impl<T: ShmSend> Publisher<[T]> {
             .try_allocate_slice(len as u32, align as u32)
             .ok_or(IceoryxError::LoanSampleFailed)?;
 
-        let data = unsafe {
-            let data = from_raw_parts_mut(data as *mut MaybeUninit<T>, len as usize);
-            Box::from_raw(data)
-        };
-
-        Ok(SampleMut {
-            data: Some(data),
-            publisher: unsafe {
-                // the transmute is not nice but safe since MaybeUninit has the same layout as the inner type
-                std::mem::transmute::<&Publisher<[T]>, &Publisher<[MaybeUninit<T>]>>(self)
-            },
-        })
+        // the transmute is not nice but safe since MaybeUninit has the same layout as the inner type
+        let publisher =
+            unsafe { std::mem::transmute::<&Publisher<[T]>, &Publisher<[MaybeUninit<T>]>>(self) };
+        Ok(SampleMut::new(data, publisher))
     }
 }

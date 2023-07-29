@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-use super::Publisher;
+use super::{Publisher, RawSampleMut};
 use crate::marker::ShmSend;
 
 use std::mem::MaybeUninit;
@@ -10,31 +10,54 @@ use std::ops::{Deref, DerefMut};
 
 /// A mutable sample owned by a single publisher
 pub struct SampleMut<'a, T: ShmSend + ?Sized> {
-    pub(super) data: Option<Box<T>>,
-    pub(super) publisher: &'a Publisher<T>,
+    data: RawSampleMut<T>,
+    publisher: &'a Publisher<T>,
 }
 
 impl<'a, T: ShmSend + ?Sized> Deref for SampleMut<'a, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        // this is safe since only `drop` and `Publisher::send` will take the `Option`
-        unsafe { self.data.as_ref().unwrap_unchecked() }
+        // SAFETY: `as_payload_ptr` returns a non-null ptr
+        unsafe { &*self.data.as_payload_ptr() }
     }
 }
 
 impl<'a, T: ShmSend + ?Sized> DerefMut for SampleMut<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        // this is safe since only `drop` and `Publisher::send` will take the `Option`
-        unsafe { self.data.as_mut().unwrap_unchecked() }
+        // SAFETY: `as_payload_mut_ptr` returns a non-null ptr
+        unsafe { &mut *self.data.as_payload_mut_ptr() }
     }
 }
 
 impl<'a, T: ShmSend + ?Sized> Drop for SampleMut<'a, T> {
     fn drop(&mut self) {
-        if let Some(data) = self.data.take() {
-            self.publisher.release_chunk(data);
-        }
+        self.publisher.release_raw(self.data);
+    }
+}
+
+impl<'a, T: ShmSend + ?Sized> SampleMut<'a, T> {
+    pub(super) fn new(data: RawSampleMut<T>, publisher: &'a Publisher<T>) -> Self {
+        Self { data, publisher }
+    }
+
+    fn into_raw_parts(self) -> (RawSampleMut<T>, &'a Publisher<T>) {
+        let sample = self.data;
+        let publisher = self.publisher;
+        std::mem::forget(self); // forget `self` to not call drop
+        (sample, publisher)
+    }
+
+    /// Convert into `RawSampleMut`
+    ///
+    /// The sample must manually be managed by calling either `publish_raw` or `release_raw`
+    /// via the corresponding publisher. Not doing either will lead to a memory leak.
+    /// `RawSampleMut` is a thin wrapper around a raw pointer which is guaranteed to be non-null
+    /// but it might be dangling if `publish_raw` or `release_raw` was already called on the
+    /// specific raw sample.
+    pub fn into_raw(self) -> RawSampleMut<T> {
+        let (sample, _) = self.into_raw_parts();
+        sample
     }
 }
 
@@ -45,21 +68,14 @@ impl<'a, T: ShmSend> SampleMut<'a, MaybeUninit<T>> {
     ///
     /// The caller must ensure that `MaybeUninit<T>` really is initialized. Calling this when
     /// the content is not fully initialized causes immediate undefined behavior.
-    pub unsafe fn assume_init(mut self) -> SampleMut<'a, T> {
-        let data = self.data.take().unwrap();
+    pub unsafe fn assume_init(self) -> SampleMut<'a, T> {
+        let (data, publisher) = self.into_raw_parts();
 
-        // TDDO use this once 'new_uninit' is stabilized
-        // 'let data = Box::assume_init(data);' or just 'let data = data.assume_init();'
-        // until then, the transmute is not nice but safe since MaybeUninit has the same layout as the inner type
-        let data = std::mem::transmute::<Box<MaybeUninit<T>>, Box<T>>(data);
+        // the transmute is not nice but safe since MaybeUninit has the same layout as the inner type
+        let data = std::mem::transmute::<RawSampleMut<MaybeUninit<T>>, RawSampleMut<T>>(data);
+        let publisher = std::mem::transmute::<&Publisher<MaybeUninit<T>>, &Publisher<T>>(publisher);
 
-        SampleMut {
-            data: Some(data),
-            // the transmute is not nice but safe since MaybeUninit has the same layout as the inner type
-            publisher: std::mem::transmute::<&Publisher<MaybeUninit<T>>, &Publisher<T>>(
-                self.publisher,
-            ),
-        }
+        SampleMut { data, publisher }
     }
 }
 
@@ -70,21 +86,15 @@ impl<'a, T: ShmSend> SampleMut<'a, [MaybeUninit<T>]> {
     ///
     /// The caller must ensure that `MaybeUninit<T>` really is initialized. Calling this when
     /// the content is not fully initialized causes immediate undefined behavior.
-    pub unsafe fn assume_init(mut self) -> SampleMut<'a, [T]> {
-        let data = self.data.take().unwrap();
+    pub unsafe fn assume_init(self) -> SampleMut<'a, [T]> {
+        let (data, publisher) = self.into_raw_parts();
 
-        // TDDO use this once 'new_uninit' is stabilized
-        // 'let data = Box::assume_init(data);' or just 'let data = data.assume_init();'
-        // until then, the transmute is not nice but safe since MaybeUninit has the same layout as the inner type
-        let data = std::mem::transmute::<Box<[MaybeUninit<T>]>, Box<[T]>>(data);
+        // the transmute is not nice but safe since MaybeUninit has the same layout as the inner type
+        let data = std::mem::transmute::<RawSampleMut<[MaybeUninit<T>]>, RawSampleMut<[T]>>(data);
+        let publisher =
+            std::mem::transmute::<&Publisher<[MaybeUninit<T>]>, &Publisher<[T]>>(publisher);
 
-        SampleMut {
-            data: Some(data),
-            // the transmute is not nice but safe since MaybeUninit has the same layout as the inner type
-            publisher: std::mem::transmute::<&Publisher<[MaybeUninit<T>]>, &Publisher<[T]>>(
-                self.publisher,
-            ),
-        }
+        SampleMut { data, publisher }
     }
 }
 
@@ -101,8 +111,8 @@ impl<'a> SampleMut<'a, [MaybeUninit<u8>]> {
         // it might not be possible since current documentation labels the usage as undefined behavior
         // without restricting it to read access
         std::mem::transmute::<&mut [MaybeUninit<u8>], &mut [u8]>(
-            // this is safe since only `drop` and `Publisher::send` will take the `Option`
-            self.data.as_mut().unwrap_unchecked(),
+            // `as_payload_ptr` returns a non-null ptr
+            &mut *self.data.as_payload_mut_ptr(),
         )
     }
 
@@ -111,18 +121,17 @@ impl<'a> SampleMut<'a, [MaybeUninit<u8>]> {
     /// If the size and alignment of T do not match with the alignment of the underlying buffer, None is returned.
     pub fn try_as_uninit<T: ShmSend>(&mut self) -> Option<&mut MaybeUninit<T>> {
         unsafe {
-            let data = self.data.as_mut().unwrap_unchecked();
-            let chunk_header =
-                ffi::ChunkHeader::from_user_payload(&*(data.as_ptr())).unwrap_unchecked();
+            let chunk_header = self.data.chunk_header();
             let payload_size = chunk_header.get_user_payload_size() as usize;
             let payload_alignment = chunk_header.get_user_payload_alignment() as usize;
 
             if payload_size >= std::mem::size_of::<T>()
                 && payload_alignment >= std::mem::align_of::<T>()
             {
+                let payload = self.data.cast::<MaybeUninit<u8>>().as_payload_mut_ptr();
                 Some(
                     &mut *(std::mem::transmute::<*mut MaybeUninit<u8>, *mut MaybeUninit<T>>(
-                        data.as_mut_ptr(),
+                        payload,
                     )),
                 )
             } else {

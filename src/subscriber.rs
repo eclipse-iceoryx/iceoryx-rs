@@ -6,6 +6,7 @@ use super::sample::SampleReceiver;
 use super::{mt, st};
 use crate::IceoryxError;
 use crate::QueueFullPolicy;
+use crate::RawSample;
 use crate::SubscribeState;
 
 use std::marker::PhantomData;
@@ -207,6 +208,11 @@ impl<T: ?Sized> InactiveSubscriber<T> {
     pub fn subscription_state(&self) -> SubscribeState {
         self.ffi_sub.subscription_state()
     }
+
+    /// Releases a raw sample which will not be used anymore
+    pub fn release_raw(&self, sample: RawSample<T>) {
+        self.ffi_sub.as_ref().release(sample);
+    }
 }
 
 /// A subscriber which is subscribed or requested to be subscribed to a publisher
@@ -252,5 +258,10 @@ impl<T: ?Sized, S: ffi::SubscriberStrongRef> Subscriber<T, S> {
         drop(sample_receiver);
 
         InactiveSubscriber::from_ffi(self.ffi_sub.take())
+    }
+
+    /// Releases a raw sample which will not be used anymore
+    pub fn release_raw(&self, sample: RawSample<T>) {
+        self.ffi_sub.as_ref().release(sample);
     }
 }

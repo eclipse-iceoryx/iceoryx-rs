@@ -101,7 +101,7 @@ fi
 echo -e "${CYAN}Info:${COLOR_OFF} Extracting new source archive to '${ICEORYX_TAG}'"
 
 mkdir -p ${ICEORYX_TAG}
-tar -xf ${ICEORYX_ARCHIVE} -C ${ICEORYX_TAG} --strip-components=1 --atime-preserve=replace
+tar -xf ${ICEORYX_ARCHIVE} -C ${ICEORYX_TAG} --strip-components=1
 
 #################
 # Strip archive #
@@ -120,17 +120,13 @@ rm -rf ${ICEORYX_TAG}/doc
 rm -rf ${ICEORYX_TAG}/iceoryx_binding_c
 rm -rf ${ICEORYX_TAG}/iceoryx_dds
 rm -rf ${ICEORYX_TAG}/iceoryx_examples
+rm -rf ${ICEORYX_TAG}/iceoryx_hoofs/test
 rm -rf ${ICEORYX_TAG}/iceoryx_integrationtest
 rm -rf ${ICEORYX_TAG}/iceoryx_meta
+rm -rf ${ICEORYX_TAG}/iceoryx_posh/test
 rm -rf ${ICEORYX_TAG}/mkdocs.yml
 rm -rf ${ICEORYX_TAG}/tools
 
-rm -rf ${ICEORYX_TAG}/iceoryx_hoofs/test
-rm -rf ${ICEORYX_TAG}/iceoryx_posh/test
-# restore modified timestamp to prevent changes in archive checksum for repetitive updates to the same tag
-touch -r ${ICEORYX_TAG}/VERSION ${ICEORYX_TAG}/iceoryx_hoofs
-touch -r ${ICEORYX_TAG}/VERSION ${ICEORYX_TAG}/iceoryx_posh
-touch -r ${ICEORYX_TAG}/VERSION ${ICEORYX_TAG}
 
 #######################
 # Re-compress archive #
@@ -138,7 +134,8 @@ touch -r ${ICEORYX_TAG}/VERSION ${ICEORYX_TAG}
 
 echo -e "${CYAN}Info:${COLOR_OFF} Re-compressing '${ICEORYX_TAG}' into '${ICEORYX_ARCHIVE}'"
 
-tar -czf ${ICEORYX_ARCHIVE} ${ICEORYX_TAG}
+# restore modified timestamp to prevent changing the archive for repetitive updates to the same tag
+tar -czf ${ICEORYX_ARCHIVE} ${ICEORYX_TAG} --mtime ./${ICEORYX_TAG}/VERSION
 
 ####################
 # Back to base dir #

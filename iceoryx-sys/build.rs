@@ -5,8 +5,9 @@
 
 use std::env;
 use std::io::{Error, ErrorKind};
-use std::path::Path;
 use std::process::Command;
+
+const ICEORYX_VERSION: &str = "v2.0.3";
 
 fn make_and_install(source_dir: &str, build_dir: &str, install_dir: &str) -> std::io::Result<()> {
     let cmake_install_prefix = format!("-DCMAKE_INSTALL_PREFIX={}", install_dir);
@@ -62,32 +63,36 @@ fn make_and_install(source_dir: &str, build_dir: &str, install_dir: &str) -> std
     Ok(())
 }
 
-fn clone_repo(repo: &str, branch: &str, source_dir: &str) -> std::io::Result<()> {
-    if !Path::new(source_dir).join(".git").exists() {
-        Command::new("git")
-            .args(&[
-                "clone",
-                repo,
-                &format!("--branch={}", branch),
-                "--recursive",
-                source_dir,
-            ])
-            .output()
-            .map_err(|out| {
-                println!("{:?}", out);
-                out
-            })
-            .map(|out| println!("{:?}", out))?;
-    } else {
-        Command::new("git")
-            .current_dir(source_dir)
-            .args(&["checkout", branch])
-            .output()
-            .map_err(|out| {
-                println!("{:?}", out);
-                out
-            })
-            .map(|out| println!("{:?}", out))?;
+fn extract_archive(archive_dir: &str, source_dir: &str, version: &str) -> std::io::Result<()> {
+    if !Command::new("mkdir")
+        .args(&["-p", &source_dir])
+        .status()?
+        .success()
+    {
+        return Err(Error::new(
+            ErrorKind::Other,
+            format!("Could not create source dir for '{}'!", source_dir),
+        ));
+    }
+
+    if !Command::new("tar")
+        .args(&[
+            "-xf",
+            &format!("{}/{}.tar.gz", archive_dir, version),
+            "-C",
+            &source_dir,
+            "--strip-components=1",
+        ])
+        .status()?
+        .success()
+    {
+        return Err(Error::new(
+            ErrorKind::Other,
+            format!(
+                "Could not extract archive '{}' to '{}'!",
+                version, source_dir
+            ),
+        ));
     }
 
     Ok(())
@@ -95,18 +100,14 @@ fn clone_repo(repo: &str, branch: &str, source_dir: &str) -> std::io::Result<()>
 
 fn main() -> std::io::Result<()> {
     let out_dir = env::var("OUT_DIR").expect("Target output directory");
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect("Cargo manifest directory");
 
-    let iceoryx_source_dir = format!("{}/{}", out_dir, "iceoryx-git");
+    let iceoryx_archive_dir = format!("{}/{}", manifest_dir, "iceoryx-cpp");
+    let iceoryx_source_dir = format!("{}/{}/", out_dir, "iceoryx-cpp");
     let iceoryx_build_dir = format!("{}/{}", out_dir, "iceoryx-build");
     let iceoryx_install_dir = format!("{}/{}", out_dir, "iceoryx-install");
 
-    const ICEORYX_VERSION: &str = "v2.0.2";
-    const ICEORYX_GIT_BRANCH: &str = ICEORYX_VERSION;
-    clone_repo(
-        "https://github.com/eclipse-iceoryx/iceoryx.git",
-        ICEORYX_GIT_BRANCH,
-        &iceoryx_source_dir,
-    )?;
+    extract_archive(&iceoryx_archive_dir, &iceoryx_source_dir, ICEORYX_VERSION)?;
 
     make_and_install(
         &iceoryx_source_dir,

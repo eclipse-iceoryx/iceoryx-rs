@@ -2,7 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/iceoryx-rs.svg)](https://crates.io/crates/iceoryx-rs)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Build & Test](https://img.shields.io/github/workflow/status/eclipse-iceoryx/iceoryx-rs/Build%20&%20Test/master?label=Build%20%26%20Test)](https://github.com/eclipse-iceoryx/iceoryx-rs/actions)
+[![Build & Test](https://img.shields.io/github/actions/workflow/status/eclipse-iceoryx/iceoryx-rs/rust.yml?event=push&label=Build%20%26%20Test)](https://github.com/eclipse-iceoryx/iceoryx-rs/actions)
 [![Codecov](https://codecov.io/gh/eclipse-iceoryx/iceoryx-rs/branch/master/graph/badge.svg?branch=master)](https://codecov.io/gh/eclipse-iceoryx/iceoryx-rs?branch=master)
 
 <p align="center">

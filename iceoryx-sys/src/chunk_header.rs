@@ -31,19 +31,19 @@ impl ChunkHeader {
         }
     }
 
-    pub fn get_user_payload_size(&self) -> u32 {
+    pub fn get_user_payload_size(&self) -> usize {
         unsafe {
             cpp!([self as "ChunkHeader*"] -> u32 as "uint32_t" {
                 return self->userPayloadSize();
-            })
+            }) as usize
         }
     }
 
-    pub fn get_user_payload_alignment(&self) -> u32 {
+    pub fn get_user_payload_alignment(&self) -> usize {
         unsafe {
             cpp!([self as "ChunkHeader*"] -> u32 as "uint32_t" {
                 return self->userPayloadAlignment();
-            })
+            }) as usize
         }
     }
 }

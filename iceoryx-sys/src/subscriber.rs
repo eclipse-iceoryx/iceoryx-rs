@@ -255,15 +255,12 @@ impl Subscriber {
             let chunk_header = payload.chunk_header();
             let payload_size = chunk_header.get_user_payload_size();
             let payload_alignment = chunk_header.get_user_payload_alignment();
-            let len = payload_size as usize / std::mem::size_of::<T>();
+            let len = payload_size / std::mem::size_of::<T>();
 
-            if payload_size as usize % std::mem::size_of::<T>() == 0
-                && payload_alignment as usize >= std::mem::align_of::<T>()
+            if payload_size % std::mem::size_of::<T>() == 0
+                && payload_alignment >= std::mem::align_of::<T>()
             {
-                Some(RawSample::slice_from_raw_parts(
-                    payload.cast::<T>(),
-                    len as usize,
-                ))
+                Some(RawSample::slice_from_raw_parts(payload.cast::<T>(), len))
             } else {
                 // TODO return Result<Option<T>>
                 self.release(payload);

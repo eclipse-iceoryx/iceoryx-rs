@@ -69,8 +69,8 @@ impl<S: ffi::SubscriberStrongRef> Sample<[u8], S> {
     /// The caller must ensure that the [u8] is actually a T. It is undefined behavior if the underlying data is not a T.
     pub unsafe fn try_as<T: ShmSend>(&self) -> Option<&T> {
         let chunk_header = self.data.chunk_header();
-        let payload_size = chunk_header.get_user_payload_size() as usize;
-        let payload_alignment = chunk_header.get_user_payload_alignment() as usize;
+        let payload_size = chunk_header.get_user_payload_size();
+        let payload_alignment = chunk_header.get_user_payload_alignment();
 
         if payload_size >= std::mem::size_of::<T>()
             && payload_alignment >= std::mem::align_of::<T>()

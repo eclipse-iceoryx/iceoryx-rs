@@ -122,8 +122,8 @@ impl<'a> SampleMut<'a, [MaybeUninit<u8>]> {
     pub fn try_as_uninit<T: ShmSend>(&mut self) -> Option<&mut MaybeUninit<T>> {
         unsafe {
             let chunk_header = self.data.chunk_header();
-            let payload_size = chunk_header.get_user_payload_size() as usize;
-            let payload_alignment = chunk_header.get_user_payload_alignment() as usize;
+            let payload_size = chunk_header.get_user_payload_size();
+            let payload_alignment = chunk_header.get_user_payload_alignment();
 
             if payload_size >= std::mem::size_of::<T>()
                 && payload_alignment >= std::mem::align_of::<T>()

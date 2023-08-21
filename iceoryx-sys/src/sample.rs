@@ -61,7 +61,7 @@ impl<T: ?Sized> RawSample<T> {
     #[inline]
     pub fn chunk_header(&self) -> &ChunkHeader {
         // SAFTEY: `self.as_payload_ptr` returns a non-null ptr
-        unsafe { ChunkHeader::from_user_payload_unchecked(self.as_payload_ptr() as *const c_void) }
+        unsafe { ChunkHeader::from_user_payload_unchecked(self.as_payload_ptr().cast::<c_void>()) }
     }
 }
 
@@ -169,7 +169,7 @@ impl<T: ?Sized> RawSampleMut<T> {
     #[inline]
     pub fn chunk_header(&self) -> &ChunkHeader {
         // SAFTEY: `self.as_payload_ptr` returns a non-null ptr
-        unsafe { ChunkHeader::from_user_payload_unchecked(self.as_payload_ptr() as *const c_void) }
+        unsafe { ChunkHeader::from_user_payload_unchecked(self.as_payload_ptr().cast::<c_void>()) }
     }
 }
 

@@ -27,7 +27,7 @@ impl ChunkHeader {
                 !chunk_header.is_null(),
                 "The ChunkHeader ptr should always be non-null when the payload ptr was non-null!"
             );
-            &*(chunk_header as *const Self)
+            &*(chunk_header.cast::<Self>())
         }
     }
 

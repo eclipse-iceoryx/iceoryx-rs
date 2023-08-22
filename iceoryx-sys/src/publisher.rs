@@ -75,33 +75,37 @@ impl Publisher {
 
     pub fn offer(&self) {
         unsafe {
-            cpp!([self as "PublisherPortUser*"] {
-                self->offer();
+            let this_ptr = self as *const Self;
+            cpp!([this_ptr as "PublisherPortUser*"] {
+                this_ptr->offer();
             });
         }
     }
 
     pub fn stop_offer(&self) {
         unsafe {
-            cpp!([self as "PublisherPortUser*"] {
-                self->stopOffer();
+            let this_ptr = self as *const Self;
+            cpp!([this_ptr as "PublisherPortUser*"] {
+                this_ptr->stopOffer();
             });
         }
     }
 
     pub fn is_offered(&self) -> bool {
         unsafe {
-            return cpp!([self as "PublisherPortUser*"] -> bool as "bool" {
-                return self->isOffered();
-            });
+            let this_ptr = self as *const Self;
+            cpp!([this_ptr as "PublisherPortUser*"] -> bool as "bool" {
+                return this_ptr->isOffered();
+            })
         }
     }
 
     pub fn has_subscribers(&self) -> bool {
         unsafe {
-            return cpp!([self as "PublisherPortUser*"] -> bool as "bool" {
-                return self->hasSubscribers();
-            });
+            let this_ptr = self as *const Self;
+            cpp!([this_ptr as "PublisherPortUser*"] -> bool as "bool" {
+                return this_ptr->hasSubscribers();
+            })
         }
     }
 
@@ -132,11 +136,12 @@ impl Publisher {
     }
 
     unsafe fn try_allocate_chunk(&self, size: u32, align: u32) -> Option<RawSampleMut<c_void>> {
-        let payload = cpp!([self as "PublisherPortUser*", size as "uint32_t", align as "uint32_t"] -> *mut std::ffi::c_void as "void*" {
-            auto allocResult = self->tryAllocateChunk(size,
-                                                      align,
-                                                      iox::CHUNK_NO_USER_HEADER_SIZE,
-                                                      iox::CHUNK_NO_USER_HEADER_ALIGNMENT);
+        let this_ptr = self as *const Self;
+        let payload = cpp!([this_ptr as "PublisherPortUser*", size as "uint32_t", align as "uint32_t"] -> *mut std::ffi::c_void as "void*" {
+            auto allocResult = this_ptr->tryAllocateChunk(size,
+                                                          align,
+                                                          iox::CHUNK_NO_USER_HEADER_SIZE,
+                                                          iox::CHUNK_NO_USER_HEADER_ALIGNMENT);
             if (allocResult.has_error()) {
                 return nullptr;
             } else {
@@ -153,10 +158,11 @@ impl Publisher {
 
     pub fn release<T: ?Sized>(&self, sample: RawSampleMut<T>) {
         unsafe {
+            let this_ptr = self as *const Self;
             let payload = sample.cast::<c_void>().as_payload_ptr();
-            cpp!([self as "PublisherPortUser*", payload as "void*"] {
+            cpp!([this_ptr as "PublisherPortUser*", payload as "void*"] {
                 auto header = iox::mepoo::ChunkHeader::fromUserPayload(payload);
-                self->releaseChunk(header);
+                this_ptr->releaseChunk(header);
             });
         }
     }
@@ -164,9 +170,10 @@ impl Publisher {
     pub fn send<T: ?Sized>(&self, sample: RawSampleMut<T>) {
         let payload = sample.cast::<c_void>().as_payload_ptr();
         unsafe {
-            cpp!([self as "PublisherPortUser*", payload as "void*"] {
+            let this_ptr = self as *const Self;
+            cpp!([this_ptr as "PublisherPortUser*", payload as "void*"] {
                 auto header = iox::mepoo::ChunkHeader::fromUserPayload(payload);
-                self->sendChunk(header);
+                this_ptr->sendChunk(header);
             });
         }
     }

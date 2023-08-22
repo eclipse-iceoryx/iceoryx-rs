@@ -80,6 +80,7 @@ impl<T> RawSample<[T]> {
     }
 
     /// Returns the length of a non-null raw slice.
+    #[allow(clippy::len_without_is_empty)] // is_empty is ambiguous for RawSample
     #[must_use]
     #[inline]
     pub fn len(self) -> usize {
@@ -188,6 +189,7 @@ impl<T> RawSampleMut<[T]> {
     }
 
     /// Returns the length of a non-null raw slice.
+    #[allow(clippy::len_without_is_empty)] // is_empty is ambiguous for RawSampleMut
     #[must_use]
     #[inline]
     pub fn len(self) -> usize {

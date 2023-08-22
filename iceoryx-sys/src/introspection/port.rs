@@ -38,6 +38,7 @@ pub struct PublisherPortData {
 
 fn process_name<Port>(port: &Port) -> Option<String> {
     unsafe {
+        let port = port as *const Port;
         let name = cpp!([port as "const PortData*"] -> *const c_char as "const char*" {
             return port->m_name.c_str();
         });
@@ -49,6 +50,7 @@ fn process_name<Port>(port: &Port) -> Option<String> {
 
 fn service_id<Port>(port: &Port) -> Option<String> {
     unsafe {
+        let port = port as *const Port;
         let name = cpp!([port as "const PortData*"] -> *const c_char as "const char*" {
             return port->m_caproServiceID.c_str();
         });
@@ -60,6 +62,7 @@ fn service_id<Port>(port: &Port) -> Option<String> {
 
 fn instance_id<Port>(port: &Port) -> Option<String> {
     unsafe {
+        let port = port as *const Port;
         let name = cpp!([port as "const PortData*"] -> *const c_char as "const char*" {
             return port->m_caproInstanceID.c_str();
         });
@@ -71,6 +74,7 @@ fn instance_id<Port>(port: &Port) -> Option<String> {
 
 fn event_id<Port>(port: &Port) -> Option<String> {
     unsafe {
+        let port = port as *const Port;
         let name = cpp!([port as "const PortData*"] -> *const c_char as "const char*" {
             return port->m_caproEventMethodID.c_str();
         });
@@ -82,6 +86,7 @@ fn event_id<Port>(port: &Port) -> Option<String> {
 
 fn node_name<Port>(port: &Port) -> Option<String> {
     unsafe {
+        let port = port as *const Port;
         let name = cpp!([port as "const PortData*"] -> *const c_char as "const char*" {
             return port->m_node.c_str();
         });
@@ -134,8 +139,9 @@ impl PublisherPortData {
 
     pub fn internal_publisher_port_id(&self) -> u64 {
         unsafe {
-            cpp!([self as "const PublisherPortData*"] -> u64 as "uint64_t" {
-                return self->m_publisherPortID;
+            let this_ptr = self as *const Self;
+            cpp!([this_ptr as "const PublisherPortData*"] -> u64 as "uint64_t" {
+                return this_ptr->m_publisherPortID;
             })
         }
     }
@@ -161,41 +167,44 @@ pub struct PortIntrospectionTopic {
 impl PortIntrospectionTopic {
     pub fn subscriber_ports(&self) -> SubscriberPortIntrospectionContainer {
         SubscriberPortIntrospectionContainer {
-            parent: &*self,
+            parent: self,
             index: 0,
         }
     }
 
     pub fn publisher_ports(&self) -> PublisherPortIntrospectionContainer {
         PublisherPortIntrospectionContainer {
-            parent: &*self,
+            parent: self,
             index: 0,
         }
     }
 
     pub fn subscriber_port_count(&self) -> usize {
         unsafe {
-            cpp!([self as "const PortIntrospectionFieldTopic*"] -> usize as "size_t" {
-                 return self->m_subscriberList.size();
+            let this_ptr = self as *const Self;
+            cpp!([this_ptr as "const PortIntrospectionFieldTopic*"] -> usize as "size_t" {
+                 return this_ptr->m_subscriberList.size();
             })
         }
     }
 
     pub fn publisher_port_count(&self) -> usize {
         unsafe {
-            cpp!([self as "const PortIntrospectionFieldTopic*"] -> usize as "size_t" {
-                 return self->m_publisherList.size();
+            let this_ptr = self as *const Self;
+            cpp!([this_ptr as "const PortIntrospectionFieldTopic*"] -> usize as "size_t" {
+                 return this_ptr->m_publisherList.size();
             })
         }
     }
 
     pub fn get_subscriber_port(&self, index: usize) -> Option<&SubscriberPortData> {
         unsafe {
-            let port = cpp!([self as "const PortIntrospectionFieldTopic*", index as "size_t"] -> *const SubscriberPortData as "const SubscriberPortData*" {
-                 if (index >= self->m_subscriberList.size()) {
+            let this_ptr = self as *const Self;
+            let port = cpp!([this_ptr as "const PortIntrospectionFieldTopic*", index as "size_t"] -> *const SubscriberPortData as "const SubscriberPortData*" {
+                 if (index >= this_ptr->m_subscriberList.size()) {
                     return nullptr;
                  }
-                 return &self->m_subscriberList[index];
+                 return &this_ptr->m_subscriberList[index];
             });
 
             if !port.is_null() {
@@ -208,11 +217,12 @@ impl PortIntrospectionTopic {
 
     pub fn get_publisher_port(&self, index: usize) -> Option<&PublisherPortData> {
         unsafe {
-            let port = cpp!([self as "const PortIntrospectionFieldTopic*", index as "size_t"] -> *const PublisherPortData as "const PublisherPortData*" {
-                 if (index >= self->m_publisherList.size()) {
+            let this_ptr = self as *const Self;
+            let port = cpp!([this_ptr as "const PortIntrospectionFieldTopic*", index as "size_t"] -> *const PublisherPortData as "const PublisherPortData*" {
+                 if (index >= this_ptr->m_publisherList.size()) {
                     return nullptr;
                  }
-                 return &self->m_publisherList[index];
+                 return &this_ptr->m_publisherList[index];
             });
 
             if !port.is_null() {
@@ -236,7 +246,7 @@ impl<'a> Iterator for SubscriberPortIntrospectionContainer<'a> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let topic = self.parent;
+        let topic = self.parent as *const PortIntrospectionTopic;
         unsafe {
             let size = cpp!([topic as "const PortIntrospectionFieldTopic*"] -> usize as "size_t" {
                  return topic->m_subscriberList.size();
@@ -259,7 +269,7 @@ impl<'a> Iterator for PublisherPortIntrospectionContainer<'a> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let topic = self.parent;
+        let topic = self.parent as *const PortIntrospectionTopic;
         unsafe {
             let size = cpp!([topic as "const PortIntrospectionFieldTopic*"] -> usize as "size_t" {
                  return topic->m_publisherList.size();

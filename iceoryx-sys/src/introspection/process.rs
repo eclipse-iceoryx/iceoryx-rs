@@ -29,8 +29,9 @@ impl ProcessIntrospectionData {
 
     pub fn name(&self) -> Option<String> {
         unsafe {
-            let name = cpp!([self as "const ProcessIntrospectionData*"] -> *const c_char as "const char*" {
-                return self->m_name.c_str();
+            let this_ptr = self as *const Self;
+            let name = cpp!([this_ptr as "const ProcessIntrospectionData*"] -> *const c_char as "const char*" {
+                return this_ptr->m_name.c_str();
             });
             CStr::from_ptr(name)
                 .to_str()
@@ -40,8 +41,9 @@ impl ProcessIntrospectionData {
 
     pub fn node_count(&self) -> usize {
         unsafe {
-            cpp!([self as "const ProcessIntrospectionData*"] -> usize as "size_t" {
-                 return self->m_nodes.size();
+            let this_ptr = self as *const Self;
+            cpp!([this_ptr as "const ProcessIntrospectionData*"] -> usize as "size_t" {
+                 return this_ptr->m_nodes.size();
             })
         }
     }
@@ -62,26 +64,28 @@ pub struct ProcessIntrospectionTopic {
 impl ProcessIntrospectionTopic {
     pub fn processes(&self) -> ProcessIntrospectionContainer {
         ProcessIntrospectionContainer {
-            parent: &*self,
+            parent: self,
             index: 0,
         }
     }
 
     pub fn process_count(&self) -> usize {
         unsafe {
-            cpp!([self as "const ProcessIntrospectionFieldTopic*"] -> usize as "size_t" {
-                 return self->m_processList.size();
+            let this_ptr = self as *const Self;
+            cpp!([this_ptr as "const ProcessIntrospectionFieldTopic*"] -> usize as "size_t" {
+                 return this_ptr->m_processList.size();
             })
         }
     }
 
     pub fn get_process(&self, index: usize) -> Option<&ProcessIntrospectionData> {
         unsafe {
-            let process = cpp!([self as "const ProcessIntrospectionFieldTopic*", index as "size_t"] -> *const ProcessIntrospectionData as "const ProcessIntrospectionData*" {
-                 if (index >= self->m_processList.size()) {
+            let this_ptr = self as *const Self;
+            let process = cpp!([this_ptr as "const ProcessIntrospectionFieldTopic*", index as "size_t"] -> *const ProcessIntrospectionData as "const ProcessIntrospectionData*" {
+                 if (index >= this_ptr->m_processList.size()) {
                     return nullptr;
                  }
-                 return &self->m_processList[index];
+                 return &this_ptr->m_processList[index];
             });
 
             if !process.is_null() {
@@ -105,7 +109,7 @@ impl<'a> Iterator for ProcessIntrospectionContainer<'a> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let topic = self.parent;
+        let topic = self.parent as *const ProcessIntrospectionTopic;
         unsafe {
             let size = cpp!([topic as "const ProcessIntrospectionFieldTopic*"] -> usize as "size_t" {
                  return topic->m_processList.size();

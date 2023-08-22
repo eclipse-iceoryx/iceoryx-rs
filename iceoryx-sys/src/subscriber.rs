@@ -46,7 +46,7 @@ impl SubscriberStrongRef for SubscriberRc {
     }
 
     fn as_ref(&self) -> &Subscriber {
-        &*self
+        self
     }
 
     fn take(self) -> Box<Subscriber> {
@@ -60,7 +60,7 @@ impl SubscriberStrongRef for SubscriberArc {
     }
 
     fn as_ref(&self) -> &Subscriber {
-        &*self
+        self
     }
 
     fn take(self) -> Box<Subscriber> {
@@ -176,35 +176,40 @@ impl Subscriber {
 
     pub fn subscribe(&self) {
         unsafe {
-            cpp!([self as "SubscriberPortUser*"] {
-                self->subscribe();
+            let this_ptr = self as *const Self;
+            cpp!([this_ptr as "SubscriberPortUser*"] {
+                this_ptr->subscribe();
             });
         }
     }
 
     pub fn unsubscribe(&self) {
         unsafe {
-            cpp!([self as "SubscriberPortUser*"] {
-                self->unsubscribe();
+            let this_ptr = self as *const Self;
+            cpp!([this_ptr as "SubscriberPortUser*"] {
+                this_ptr->unsubscribe();
             });
         }
     }
 
     pub fn subscription_state(&self) -> SubscribeState {
         unsafe {
-            cpp!([self as "SubscriberPortUser*"] -> SubscribeState as "SubscribeState" {
-                return self->getSubscriptionState();
+            let this_ptr = self as *const Self;
+            cpp!([this_ptr as "SubscriberPortUser*"] -> SubscribeState as "SubscribeState" {
+                return this_ptr->getSubscriptionState();
             })
         }
     }
 
     pub fn set_condition_variable(&self, condition_variable: &ConditionVariable) {
         unsafe {
-            cpp!([self as "SubscriberPortUser*", condition_variable as "ConditionVariable*"] {
-                if(!self->isConditionVariableSet()) {
+            let this_ptr = self as *const Self;
+            let condition_variable = condition_variable as *const ConditionVariable;
+            cpp!([this_ptr as "SubscriberPortUser*", condition_variable as "ConditionVariable*"] {
+                if(!this_ptr->isConditionVariableSet()) {
                     // currently the condition variable is used only for one subscriber and therefore the index is set to 0
                     constexpr uint64_t NOTIFICATION_INDEX{0};
-                    self->setConditionVariable(condition_variable->data(), NOTIFICATION_INDEX);
+                    this_ptr->setConditionVariable(condition_variable->data(), NOTIFICATION_INDEX);
                 }
             });
         }
@@ -212,24 +217,27 @@ impl Subscriber {
 
     pub fn unset_condition_variable(&self) {
         unsafe {
-            cpp!([self as "SubscriberPortUser*"] {
-                self->unsetConditionVariable();
+            let this_ptr = self as *const Self;
+            cpp!([this_ptr as "SubscriberPortUser*"] {
+                this_ptr->unsetConditionVariable();
             });
         }
     }
 
     pub fn is_condition_variable_set(&self) -> bool {
         unsafe {
-            cpp!([self as "SubscriberPortUser*"] -> bool as "bool"{
-                return self->isConditionVariableSet();
+            let this_ptr = self as *const Self;
+            cpp!([this_ptr as "SubscriberPortUser*"] -> bool as "bool"{
+                return this_ptr->isConditionVariableSet();
             })
         }
     }
 
     pub fn has_chunks(&self) -> bool {
         unsafe {
-            cpp!([self as "SubscriberPortUser*"] -> bool as "bool" {
-                return self->hasNewChunks();
+            let this_ptr = self as *const Self;
+            cpp!([this_ptr as "SubscriberPortUser*"] -> bool as "bool" {
+                return this_ptr->hasNewChunks();
             })
         }
     }
@@ -238,8 +246,9 @@ impl Subscriber {
 
     pub fn clear(&self) {
         unsafe {
-            cpp!([self as "SubscriberPortUser*"] {
-                self->releaseQueuedChunks();
+            let this_ptr = self as *const Self;
+            cpp!([this_ptr as "SubscriberPortUser*"] {
+                this_ptr->releaseQueuedChunks();
             });
         }
     }
@@ -270,8 +279,9 @@ impl Subscriber {
     }
 
     unsafe fn try_get_chunk(&self) -> Option<RawSample<c_void>> {
-        let payload = cpp!([self as "SubscriberPortUser*"] -> *const std::ffi::c_void as "const void*" {
-            auto getChunkResult = self->tryGetChunk();
+        let this_ptr = self as *const Self;
+        let payload = cpp!([this_ptr as "SubscriberPortUser*"] -> *const std::ffi::c_void as "const void*" {
+            auto getChunkResult = this_ptr->tryGetChunk();
 
             if (getChunkResult.has_error()) {
                 return nullptr;
@@ -289,10 +299,11 @@ impl Subscriber {
 
     pub fn release<T: ?Sized>(&self, sample: RawSample<T>) {
         unsafe {
+            let this_ptr = self as *const Self;
             let payload = sample.cast::<c_void>().as_payload_ptr();
-            cpp!([self as "SubscriberPortUser*", payload as "void*"] {
+            cpp!([this_ptr as "SubscriberPortUser*", payload as "void*"] {
                 auto header = iox::mepoo::ChunkHeader::fromUserPayload(payload);
-                self->releaseChunk(header);
+                this_ptr->releaseChunk(header);
             });
         }
     }
@@ -320,9 +331,10 @@ impl ConditionVariable {
 
     pub fn timed_wait(&self, timeout: Duration) {
         unsafe {
+            let this_ptr = self as *const Self;
             let timeout_ns = timeout.as_nanos() as u64;
-            cpp!([self as "ConditionVariable*", timeout_ns as "uint64_t"] {
-                self->timedWait(iox::units::Duration::fromNanoseconds(timeout_ns));
+            cpp!([this_ptr as "ConditionVariable*", timeout_ns as "uint64_t"] {
+                this_ptr->timedWait(iox::units::Duration::fromNanoseconds(timeout_ns));
             });
         }
     }

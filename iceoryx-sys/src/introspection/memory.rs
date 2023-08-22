@@ -48,8 +48,9 @@ impl MemorySegment {
 
     pub fn writer_group(&self) -> Option<String> {
         unsafe {
-            let group_name = cpp!([self as "const MemPoolIntrospectionInfo*"] -> *const c_char as "const char*" {
-                return self->m_writerGroupName.c_str();
+            let this_ptr = self as *const Self;
+            let group_name = cpp!([this_ptr as "const MemPoolIntrospectionInfo*"] -> *const c_char as "const char*" {
+                return this_ptr->m_writerGroupName.c_str();
             });
             CStr::from_ptr(group_name)
                 .to_str()
@@ -59,8 +60,9 @@ impl MemorySegment {
 
     pub fn reader_group(&self) -> Option<String> {
         unsafe {
-            let group_name = cpp!([self as "const MemPoolIntrospectionInfo*"] -> *const c_char as "const char*" {
-                return self->m_readerGroupName.c_str();
+            let this_ptr = self as *const Self;
+            let group_name = cpp!([this_ptr as "const MemPoolIntrospectionInfo*"] -> *const c_char as "const char*" {
+                return this_ptr->m_readerGroupName.c_str();
             });
             CStr::from_ptr(group_name)
                 .to_str()
@@ -70,7 +72,7 @@ impl MemorySegment {
 
     pub fn mempools(&self) -> MemPoolInfoContainer {
         MemPoolInfoContainer {
-            memory_segment: &*self,
+            memory_segment: self,
             mempool_index: 0,
         }
     }
@@ -80,7 +82,7 @@ impl<'a> Iterator for MemPoolInfoContainer<'a> {
     type Item = &'a MemPoolInfo;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let memory_segment = self.memory_segment;
+        let memory_segment = self.memory_segment as *const MemorySegment;
         let mempool_index = self.mempool_index;
         unsafe {
             let mempool_info = cpp!([memory_segment as "const MemPoolIntrospectionInfo*", mempool_index as "size_t"] -> *const MemPoolInfo as "const MemPoolInfo*" {
@@ -100,7 +102,7 @@ impl<'a> Iterator for MemPoolInfoContainer<'a> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let memory_segment = self.memory_segment;
+        let memory_segment = self.memory_segment as *const MemorySegment;
         unsafe {
             let size = cpp!([memory_segment as "const MemPoolIntrospectionInfo*"] -> usize as "size_t" {
                  return memory_segment->m_mempoolInfo.size();
@@ -124,7 +126,7 @@ pub struct MemPoolIntrospectionTopic {
 impl MemPoolIntrospectionTopic {
     pub fn memory_segments(&self) -> MemorySegmentContainer {
         MemorySegmentContainer {
-            memory_segments: &*self,
+            memory_segments: self,
             segment_index: 0,
         }
     }
@@ -134,7 +136,7 @@ impl<'a> Iterator for MemorySegmentContainer<'a> {
     type Item = &'a MemorySegment;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let memory_segments = self.memory_segments;
+        let memory_segments = self.memory_segments as *const MemPoolIntrospectionTopic;
         let segment_index = self.segment_index;
         unsafe {
             let segment = cpp!([memory_segments as "const MemPoolIntrospectionInfoContainer*", segment_index as "size_t"] -> *const MemorySegment as "const MemPoolIntrospectionInfo*" {
@@ -154,7 +156,7 @@ impl<'a> Iterator for MemorySegmentContainer<'a> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let memory_segments = self.memory_segments;
+        let memory_segments = self.memory_segments as *const MemPoolIntrospectionTopic;
         unsafe {
             let size = cpp!([memory_segments as "const MemPoolIntrospectionInfoContainer*"] -> usize as "size_t" {
                  return memory_segments->size();

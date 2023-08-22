@@ -13,12 +13,12 @@ fn make_and_install(source_dir: &str, build_dir: &str, install_dir: &str) -> std
     let cmake_install_prefix = format!("-DCMAKE_INSTALL_PREFIX={}", install_dir);
     let cmake_prefix_path = format!("-DCMAKE_PREFIX_PATH={}", install_dir);
 
-    for iceoryx_component in &["iceoryx_hoofs", "iceoryx_posh"] {
+    for iceoryx_component in ["iceoryx_hoofs", "iceoryx_posh"] {
         let component_source_dir = format!("{}/{}", source_dir, iceoryx_component);
         let component_build_dir = format!("{}/{}", build_dir, iceoryx_component);
 
         if !Command::new("mkdir")
-            .args(&["-p", &component_build_dir])
+            .args(["-p", &component_build_dir])
             .status()?
             .success()
         {
@@ -30,7 +30,7 @@ fn make_and_install(source_dir: &str, build_dir: &str, install_dir: &str) -> std
 
         if !Command::new("cmake")
             .current_dir(&component_build_dir)
-            .args(&[
+            .args([
                 "-DCMAKE_BUILD_TYPE=Release",
                 "-DBUILD_SHARED_LIBS=OFF",
                 "-DROUDI_ENVIRONMENT=ON",
@@ -49,7 +49,7 @@ fn make_and_install(source_dir: &str, build_dir: &str, install_dir: &str) -> std
 
         if !Command::new("cmake")
             .current_dir(&component_build_dir)
-            .args(&["--build", ".", "--target", "install"])
+            .args(["--build", ".", "--target", "install"])
             .status()?
             .success()
         {
@@ -65,7 +65,7 @@ fn make_and_install(source_dir: &str, build_dir: &str, install_dir: &str) -> std
 
 fn extract_archive(archive_dir: &str, source_dir: &str, version: &str) -> std::io::Result<()> {
     if !Command::new("mkdir")
-        .args(&["-p", &source_dir])
+        .args(["-p", source_dir])
         .status()?
         .success()
     {
@@ -76,11 +76,11 @@ fn extract_archive(archive_dir: &str, source_dir: &str, version: &str) -> std::i
     }
 
     if !Command::new("tar")
-        .args(&[
+        .args([
             "-xf",
             &format!("{}/{}.tar.gz", archive_dir, version),
             "-C",
-            &source_dir,
+            source_dir,
             "--strip-components=1",
         ])
         .status()?
@@ -149,7 +149,7 @@ fn main() -> std::io::Result<()> {
 
     #[cfg(not(any(target_os = "windows", target_os = "macos")))]
     println!("cargo:rustc-link-lib=stdc++");
-    #[cfg(any(target_os = "macos"))]
+    #[cfg(target_os = "macos")]
     println!("cargo:rustc-link-lib=c++");
 
     Ok(())

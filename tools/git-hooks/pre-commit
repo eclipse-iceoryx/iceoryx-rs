@@ -1,0 +1,45 @@
+#! /bin/bash
+
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
+# SPDX-FileContributor: Mathias Kraus
+
+# This script checks for trailing whitespaces on the modified file and runs 'cargo fmt --check'
+
+set -eu
+
+COLOR_OFF='\033[0m'
+COLOR_RED='\033[1;31m'
+COLOR_GREEN='\033[1;32m'
+COLOR_YELLOW='\033[1;33m'
+
+# check for trailing whitespaces
+NUMBER_OF_FILES_WITH_TRAILING_WHITESPACES=0
+for FILE in $(git diff --name-only --staged --diff-filter=ACMRT) ; do
+    if [[ -f ${FILE} ]]; then
+        LINES_WITH_WHITESPACES=$(egrep -no '[[:space:]]+$' ${FILE} | sed "s/://g")
+        if [[ -n ${LINES_WITH_WHITESPACES} ]]; then
+            if [[ ${NUMBER_OF_FILES_WITH_TRAILING_WHITESPACES} -eq 0 ]]; then
+                echo -e "${COLOR_YELLOW}The following file(s) have line(s) with trailing whitespaces!${COLOR_OFF}"
+                NUMBER_OF_FILES_WITH_TRAILING_WHITESPACES=${NUMBER_OF_FILES_WITH_TRAILING_WHITESPACES}+1
+            fi
+            echo -e "${FILE} on line(s):"
+            for LINE in ${LINES_WITH_WHITESPACES} ; do
+                echo -e "  ${LINE}"
+            done
+        fi
+    fi
+done
+
+if [[ ${NUMBER_OF_FILES_WITH_TRAILING_WHITESPACES} -ne 0 ]]; then
+    echo -e "${COLOR_YELLOW}Please remove the whitespaces and commit the changes with 'git commit --amend --no-edit'${COLOR_OFF}"
+    echo -e ""
+fi
+
+# check for cargo fmt
+if ! &>/dev/null cargo fmt -- --check
+then
+    echo -e "${COLOR_YELLOW}The code is not formatted with 'cargo fmt'!${COLOR_OFF}"
+    echo -e "${COLOR_YELLOW}Please run 'cargo fmt' and commit the changes with 'git commit --amend --no-edit'${COLOR_OFF}"
+    echo -e ""
+fi

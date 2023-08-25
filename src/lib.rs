@@ -33,6 +33,7 @@
 
 pub mod introspection;
 pub mod marker;
+pub mod reactor;
 
 mod error;
 pub use error::IceoryxError;

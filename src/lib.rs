@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: © Contributors to the iceoryx-rs project
 // SPDX-FileContributor: Mathias Kraus
 
-#![warn(missing_docs)]
+// #![warn(missing_docs)]
 
 //! # iceoryx-rs
 //!

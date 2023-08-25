@@ -11,6 +11,8 @@ use std::sync::Arc;
 
 mod control;
 pub use control::Control;
+pub use control::Condition;
+pub use control::Foo;
 
 mod demultiplexer;
 use demultiplexer::Demultiplexer;
@@ -23,7 +25,7 @@ pub use handler::Event;
 pub use handler::Handler;
 pub use handler::State;
 
-struct Reactor {
+pub struct Reactor {
     control: Control,
     dispatcher: Dispatcher,
 }
@@ -38,5 +40,10 @@ impl Reactor {
             control,
             dispatcher,
         }
+    }
+
+    pub fn split(self) -> (Control, Dispatcher) {
+        let Reactor { control, dispatcher } = self;
+        (control, dispatcher)
     }
 }

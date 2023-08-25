@@ -198,13 +198,11 @@ impl Subscriber {
         }
     }
 
-    pub fn set_condition_variable(&self, condition_variable: &ConditionVariable) {
+    pub fn set_condition_variable(&self, condition_variable: &ConditionVariable, notification_index: u64) {
         unsafe {
-            cpp!([self as "SubscriberPortUser*", condition_variable as "ConditionVariable*"] {
+            cpp!([self as "SubscriberPortUser*", condition_variable as "ConditionVariable*", notification_index as "uint64_t"] {
                 if(!self->isConditionVariableSet()) {
-                    // currently the condition variable is used only for one subscriber and therefore the index is set to 0
-                    constexpr uint64_t NOTIFICATION_INDEX{0};
-                    self->setConditionVariable(condition_variable->data(), NOTIFICATION_INDEX);
+                    self->setConditionVariable(condition_variable->data(), notification_index);
                 }
             });
         }

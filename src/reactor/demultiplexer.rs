@@ -5,7 +5,7 @@
 use std::sync::Arc;
 
 pub(super) struct Demultiplexer {
-    condition_variable: Arc<Box<ffi::ConditionVariable>>,
+    pub(super) condition_variable: Arc<Box<ffi::ConditionVariable>>,
     // TODO queue receiver
 }
 

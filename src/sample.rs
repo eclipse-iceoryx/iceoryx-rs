@@ -63,18 +63,38 @@ impl<S: ffi::SubscriberStrongRef> Sample<[u8], S> {
 /// Access to the sample receiver queue of the subscriber
 pub struct SampleReceiver<T: ?Sized, S: ffi::SubscriberStrongRef> {
     ffi_sub: S,
-    condition_variable: Box<ffi::ConditionVariable>,
+    // condition_variable: Box<ffi::ConditionVariable>,
     phantom: PhantomData<T>,
+}
+
+use crate::reactor::Foo;
+
+use std::any::Any;
+
+impl<T: ?Sized + 'static, S: ffi::SubscriberStrongRef + 'static> Foo for SampleReceiver<T, S> {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+
+    fn attach_condition_variable(&self, condition_variable: &ffi::ConditionVariable, notification_index: u64) {
+        self.ffi_sub.as_ref().set_condition_variable(&condition_variable, notification_index);
+    }
 }
 
 impl<T: ?Sized, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
     pub(super) fn new(ffi_sub: S) -> Self {
-        let condition_variable = ffi::ConditionVariable::new();
-        ffi_sub.as_ref().set_condition_variable(&condition_variable);
+        // let condition_variable = ffi::ConditionVariable::new();
+        // // currently the condition variable is used only for one subscriber and therefore the index is set to 0
+        // let notification_index = 0;
+        // ffi_sub.as_ref().set_condition_variable(&condition_variable, notification_index);
 
         SampleReceiver {
             ffi_sub,
-            condition_variable,
+            // condition_variable,
             phantom: PhantomData,
         }
     }
@@ -105,10 +125,10 @@ impl<T: ?Sized, S: ffi::SubscriberStrongRef> SampleReceiver<T, S> {
             let elapsed = entry_time.elapsed().unwrap_or(timeout);
             timeout.checked_sub(elapsed)
         } {
-            self.condition_variable.timed_wait(remaining_timeout);
-            if self.has_data() {
-                return SampleReceiverWaitState::SamplesAvailable;
-            }
+            // self.condition_variable.timed_wait(remaining_timeout);
+            // if self.has_data() {
+            //     return SampleReceiverWaitState::SamplesAvailable;
+            // }
         }
 
         if self.ffi_sub.as_ref().is_condition_variable_set() {

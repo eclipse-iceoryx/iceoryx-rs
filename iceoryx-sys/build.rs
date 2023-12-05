@@ -9,9 +9,24 @@ use std::process::Command;
 
 const ICEORYX_VERSION: &str = "v2.0.3";
 
-fn make_and_install(source_dir: &str, build_dir: &str, install_dir: &str) -> std::io::Result<()> {
+fn make_and_install(
+    cpp_dir: &str,
+    source_dir: &str,
+    build_dir: &str,
+    install_dir: &str,
+) -> std::io::Result<()> {
     let cmake_install_prefix = format!("-DCMAKE_INSTALL_PREFIX={}", install_dir);
     let cmake_prefix_path = format!("-DCMAKE_PREFIX_PATH={}", install_dir);
+
+    let target = env::var("TARGET").expect("Target");
+    let host = env::var("HOST").expect("Host");
+
+    let extra_cmake_args = if target == host {
+        vec![]
+    } else {
+        let toolchain_cmake_file = format!("{}/toolchain.{}.cmake", cpp_dir, target);
+        vec![format!("-DCMAKE_TOOLCHAIN_FILE={}", toolchain_cmake_file)]
+    };
 
     for iceoryx_component in ["iceoryx_hoofs", "iceoryx_posh"] {
         let component_source_dir = format!("{}/{}", source_dir, iceoryx_component);
@@ -28,16 +43,17 @@ fn make_and_install(source_dir: &str, build_dir: &str, install_dir: &str) -> std
             ));
         }
 
+        let mut cmake_args = extra_cmake_args.clone();
+        cmake_args.push("-DCMAKE_BUILD_TYPE=Release".into());
+        cmake_args.push("-DBUILD_SHARED_LIBS=OFF".into());
+        cmake_args.push("-DROUDI_ENVIRONMENT=ON".into());
+        cmake_args.push(cmake_prefix_path.clone());
+        cmake_args.push(cmake_install_prefix.clone());
+        cmake_args.push(component_source_dir.clone());
+
         if !Command::new("cmake")
             .current_dir(&component_build_dir)
-            .args([
-                "-DCMAKE_BUILD_TYPE=Release",
-                "-DBUILD_SHARED_LIBS=OFF",
-                "-DROUDI_ENVIRONMENT=ON",
-                &cmake_prefix_path,
-                &cmake_install_prefix,
-                &component_source_dir,
-            ])
+            .args(&cmake_args)
             .status()?
             .success()
         {
@@ -47,9 +63,15 @@ fn make_and_install(source_dir: &str, build_dir: &str, install_dir: &str) -> std
             ));
         }
 
+        let mut cmake_args = Vec::new();
+        cmake_args.push("--build");
+        cmake_args.push(".");
+        cmake_args.push("--target");
+        cmake_args.push("install");
+
         if !Command::new("cmake")
             .current_dir(&component_build_dir)
-            .args(["--build", ".", "--target", "install"])
+            .args(&cmake_args)
             .status()?
             .success()
         {
@@ -63,7 +85,7 @@ fn make_and_install(source_dir: &str, build_dir: &str, install_dir: &str) -> std
     Ok(())
 }
 
-fn extract_archive(archive_dir: &str, source_dir: &str, version: &str) -> std::io::Result<()> {
+fn extract_archive(cpp_dir: &str, source_dir: &str, version: &str) -> std::io::Result<()> {
     if !Command::new("mkdir")
         .args(["-p", source_dir])
         .status()?
@@ -78,7 +100,7 @@ fn extract_archive(archive_dir: &str, source_dir: &str, version: &str) -> std::i
     if !Command::new("tar")
         .args([
             "-xf",
-            &format!("{}/{}.tar.gz", archive_dir, version),
+            &format!("{}/{}.tar.gz", cpp_dir, version),
             "-C",
             source_dir,
             "--strip-components=1",
@@ -102,14 +124,15 @@ fn main() -> std::io::Result<()> {
     let out_dir = env::var("OUT_DIR").expect("Target output directory");
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect("Cargo manifest directory");
 
-    let iceoryx_archive_dir = format!("{}/{}", manifest_dir, "iceoryx-cpp");
+    let iceoryx_cpp_dir = format!("{}/{}", manifest_dir, "iceoryx-cpp");
     let iceoryx_source_dir = format!("{}/{}/", out_dir, "iceoryx-cpp");
     let iceoryx_build_dir = format!("{}/{}", out_dir, "iceoryx-build");
     let iceoryx_install_dir = format!("{}/{}", out_dir, "iceoryx-install");
 
-    extract_archive(&iceoryx_archive_dir, &iceoryx_source_dir, ICEORYX_VERSION)?;
+    extract_archive(&iceoryx_cpp_dir, &iceoryx_source_dir, ICEORYX_VERSION)?;
 
     make_and_install(
+        &iceoryx_cpp_dir,
         &iceoryx_source_dir,
         &iceoryx_build_dir,
         &iceoryx_install_dir,

@@ -16,7 +16,8 @@ Safe Rust bindings for [Eclipse iceoryx](https://github.com/eclipse-iceoryx/iceo
     - [How to start RouDi](#how-to-start-roudi)
     - [Run the simple publisher and subscriber example](#run-the-simple-publisher-and-subscriber-example)
 3. [How to write a simple application](#how-to-write-a-simple-application)
-4. [Limitations](#limitations)
+4. [Cross-compiling](#cross-compiling)
+5. [Limitations](#limitations)
 
 ## About
 
@@ -261,6 +262,23 @@ We are done. Lets run our code.
 Please have a look at the [examples](https://github.com/eclipse-iceoryx/iceoryx-rs/tree/master/examples)
 in the repository. It contains additional examples to show how uninitialized samples can be loaned and
 how the `wait_for_samples` method of the `SampleReceiver` can be used to get notified on new samples.
+
+## Cross-Compiling
+
+`iceoryx-sys` uses `cmake` to build `iceoryx`, which has a dependency to `libacl` on Linux. As a result,
+to link to a cross-compiled version of the native `iceoryx`, it's necessary to set several environment variables
+to link against the prebuilt libacl.
+
+To tell the linker lookup libraries from your sysroot, please set the following environment variables, and invoke the build script:
+
+```bash
+# let's take the target aarch64-unknown-linux-gnu for instance
+SYSROOT=/path/to/your/cross/compile/sysroot
+export LDFLAGS="--sysroot $SYSROOT"
+export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS="-C link-arg=--sysroot=$SYSROOT"
+
+cargo build --target aarch64-unknown-linux-gnu --all-targets
+```
 
 ## Limitations
 

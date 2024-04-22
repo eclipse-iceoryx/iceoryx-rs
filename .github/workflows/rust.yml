@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Setup Rust
       uses: dtolnay/rust-toolchain@v1
       with:
@@ -30,7 +30,7 @@ jobs:
         os: [ubuntu-latest, macOS-latest] #Todo add windows-latest
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build and cache cargo-nextest
       uses: ./.github/actions/build-and-cache-rust-tool
       with:
@@ -45,7 +45,7 @@ jobs:
     needs: pre-flight-check
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build and cache grcov
       uses: ./.github/actions/build-and-cache-rust-tool
       with:
@@ -71,7 +71,7 @@ jobs:
     continue-on-error: ${{ matrix.toolchain != 'stable' }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Setup Rust
       uses: dtolnay/rust-toolchain@v1
       with:
@@ -84,7 +84,7 @@ jobs:
         cargo clippy --version >> version_info
         cat version_info
     - name: Setup cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/bin/
@@ -94,7 +94,7 @@ jobs:
           target/
         key: cache-1-${{ runner.os }}-toolchain-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.toml', '**/build.rs', 'version_info') }}
     - name: Download cargo-nextest artifact
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: ${{ runner.os }}-cargo-nextest
         path: ~/.cargo/bin
@@ -119,7 +119,7 @@ jobs:
     needs: [cargo-nextest, grcov]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Setup Rust
       uses: dtolnay/rust-toolchain@v1
       with:
@@ -131,7 +131,7 @@ jobs:
         cargo --version >> version_info
         cat version_info
     - name: Setup cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/bin/
@@ -146,12 +146,12 @@ jobs:
          find . -type f -wholename "**/*.profraw" -exec rm {} \;
          rm -rf target/debug/coverage-html
     - name: Download artifact cargo-nextest
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: ${{ runner.os }}-cargo-nextest
         path: ~/.cargo/bin
     - name: Download artifact grcov
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: ${{ runner.os }}-grcov
         path: ~/.cargo/bin
@@ -191,7 +191,7 @@ jobs:
           --output-path target/debug/coverage-html
         sed -i 's/coverage/grcov/' target/debug/coverage-html/coverage.json
     - name: Archive coverage-html artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-html
         path: target/debug/coverage-html/*

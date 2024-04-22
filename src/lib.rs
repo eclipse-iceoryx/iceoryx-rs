@@ -11,7 +11,7 @@
 //! iceoryx also fits well into other domains where low latency and transmitting large data structures
 //! is a concern. If you would like to know more about Eclipse iceoryx you can take a look at the
 //! `Getting started` section on [iceoryx.io](https://iceoryx.io) or the
-//! [README.md](https://github.com/eclipse-iceoryx/iceoryx/blob/master/README.md) of the main project.
+//! [README.md](https://github.com/eclipse-iceoryx/iceoryx/blob/main/README.md) of the main project.
 //!
 //! The Rust bindings are a work in progress and currently support only the pub-sub messaging pattern.
 //! Upcoming releases will close the gap and the goal is to have the Rust bindings as a first class citizen

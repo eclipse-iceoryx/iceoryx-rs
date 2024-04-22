@@ -3,7 +3,7 @@
 [![Crates.io](https://img.shields.io/crates/v/iceoryx-rs.svg)](https://crates.io/crates/iceoryx-rs)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Build & Test](https://img.shields.io/github/actions/workflow/status/eclipse-iceoryx/iceoryx-rs/rust.yml?event=push&label=Build%20%26%20Test)](https://github.com/eclipse-iceoryx/iceoryx-rs/actions)
-[![Codecov](https://codecov.io/gh/eclipse-iceoryx/iceoryx-rs/branch/master/graph/badge.svg?branch=master)](https://codecov.io/gh/eclipse-iceoryx/iceoryx-rs?branch=master)
+[![Codecov](https://codecov.io/gh/eclipse-iceoryx/iceoryx-rs/branch/main/graph/badge.svg?branch=main)](https://codecov.io/gh/eclipse-iceoryx/iceoryx-rs?branch=main)
 
 <p align="center">
 <img src="https://user-images.githubusercontent.com/8661268/114321508-64a6b000-9b1b-11eb-95ef-b84c91387cff.png" width="50%">
@@ -25,7 +25,7 @@ autonomous driving with their demand on high data throughput and low latency. Wi
 iceoryx also fits well into other domains where low latency and transmitting large data structures
 is a concern. If you would like to know more about Eclipse iceoryx you can take a look at the
 `Getting started` section on [iceoryx.io](https://iceoryx.io) or the
-[README.md](https://github.com/eclipse-iceoryx/iceoryx/blob/master/README.md) of the main project.
+[README.md](https://github.com/eclipse-iceoryx/iceoryx/blob/main/README.md) of the main project.
 
 The Rust bindings are a work in progress and currently support only the pub-sub messaging pattern.
 Upcoming releases will close the gap and the goal is to have the Rust bindings as a first class citizen
@@ -258,7 +258,7 @@ We are done. Lets run our code.
 2. Start the `publisher` with `cargo run publisher`
 2. Start the `subscriber` with `cargo run subscriber`
 
-Please have a look at the [examples](https://github.com/eclipse-iceoryx/iceoryx-rs/tree/master/examples)
+Please have a look at the [examples](https://github.com/eclipse-iceoryx/iceoryx-rs/tree/main/examples)
 in the repository. It contains additional examples to show how uninitialized samples can be loaned and
 how the `wait_for_samples` method of the `SampleReceiver` can be used to get notified on new samples.
 

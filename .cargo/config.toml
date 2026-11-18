@@ -1,3 +1,6 @@
 [env]
 RUST_TEST_THREADS = "1"     # prevent running multiple RouDiEnvironments in parallel with `cargo test`
 NEXTEST_TEST_THREADS = "1"  # prevent running multiple RouDiEnvironments in parallel with `cargo nextest run`
+
+[target.aarch64-unknown-linux-gnu]
+linker = "aarch64-linux-gnu-gcc"

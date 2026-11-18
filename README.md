@@ -5,6 +5,11 @@
 [![Build & Test](https://img.shields.io/github/actions/workflow/status/eclipse-iceoryx/iceoryx-rs/rust.yml?event=push&label=Build%20%26%20Test)](https://github.com/eclipse-iceoryx/iceoryx-rs/actions)
 [![Codecov](https://codecov.io/gh/eclipse-iceoryx/iceoryx-rs/branch/main/graph/badge.svg?branch=main)](https://codecov.io/gh/eclipse-iceoryx/iceoryx-rs?branch=main)
 
+> [!CAUTION]
+> This repository is not maintained and will not receive any updates or security patches.
+> Please migrate to [iceoryx2](https://github.com/eclipse-iceoryx/iceoryx2) for using the native Rust implementation.
+
+
 <p align="center">
 <img src="https://user-images.githubusercontent.com/8661268/114321508-64a6b000-9b1b-11eb-95ef-b84c91387cff.png" width="50%">
 </p>
@@ -27,9 +32,7 @@ is a concern. If you would like to know more about Eclipse iceoryx you can take 
 `Getting started` section on [iceoryx.io](https://iceoryx.io) or the
 [README.md](https://github.com/eclipse-iceoryx/iceoryx/blob/main/README.md) of the main project.
 
-The Rust bindings are a work in progress and currently support only the pub-sub messaging pattern.
-Upcoming releases will close the gap and the goal is to have the Rust bindings as a first class citizen
-in the iceoryx ecosystem.
+The Rust bindings support only the pub-sub messaging pattern.
 
 This project started with the goal to create an awesome looking introspection TUI in Rust and led to
 [iceray](https://crates.io/crates/iceray). Check it out.
